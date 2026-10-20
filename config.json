@@ -1,0 +1,44 @@
+{
+  "name": "$PACKWARS",
+  "mint": "PASTE_TOKEN_MINT_ADDRESS",
+  "rpcUrl": "https://api.mainnet-beta.solana.com",
+  "mode": "live",
+  "officialPackArt": true,
+  "holderDuels": {
+    "enabled": true
+  },
+  "pack": "pokemon_50",
+  "gachaNetwork": "mainnet",
+  "reserveSol": 0.05,
+  "solUsdFallback": 180,
+  "fees": {
+    "claim": true,
+    "claimEveryMinutes": 10,
+    "pool": "pump",
+    "priorityFee": 1e-05
+  },
+  "maxDuelsPerDay": 48,
+  "feeProofUrl": "",
+  "ledgerEveryMinutes": 5,
+  "minHoldingPct": 1,
+  "exclude": [],
+  "snapshot": {
+    "fullScan": false,
+    "excludeProgramOwned": true
+  },
+  "pollSeconds": 60,
+  "port": 8787,
+  "dataFile": "data/state.json",
+  "arena": {
+    "enabled": true,
+    "packs": "all",
+    "payWindowMinutes": 10,
+    "maxSeatsPerWalletPerDay": 20,
+    "requireAgeConfirm": false,
+    "blockedCountries": [],
+    "countryHeader": "cf-ipcountry",
+    "dataFile": "data/arena.json",
+    "openGiveUpMinutes": 30,
+    "testOpponent": false
+  }
+}

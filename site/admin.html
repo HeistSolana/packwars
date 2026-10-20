@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PACKWARS admin</title>
+<link rel="icon" href="favicon-64.png">
+<style>
+  :root { --ink: #0C0C12; --ink2: #15151F; --line: #2C2C3D; --text: #F2F1F7; --muted: #9C9AB3; --lime: #C8FF3E; --pink: #FF4F93; --red: #FF5A5A; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ink); color: var(--text); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 32px 16px; }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font: italic 900 34px/1 system-ui, sans-serif; margin: 0 0 6px; background: linear-gradient(90deg, var(--lime), var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  p.sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--ink2); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; }
+  label small { color: var(--muted); font-weight: 400; }
+  input { font: 14px ui-monospace, Menlo, Consolas, monospace; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--ink); color: var(--text); width: 100%; }
+  input:focus { outline: 2px solid var(--lime); outline-offset: 1px; }
+  button { font: 800 16px system-ui, sans-serif; padding: 12px; border-radius: 10px; border: 0; cursor: pointer; background: linear-gradient(90deg, var(--lime), var(--pink)); color: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { min-height: 1.4em; font-size: 14px; margin: 0; }
+  .msg.ok { color: var(--lime); } .msg.bad { color: var(--red); }
+  .now { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; overflow-wrap: anywhere; }
+  .now b { color: var(--text); }
+  #coinForm[hidden], #loginForm[hidden] { display: none; }
+  a { color: var(--lime); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PACKWARS admin</h1>
+  <p class="sub">Coin settings for the live site. Changes apply instantly, no restart needed.</p>
+
+  <form class="card" id="loginForm">
+    <label for="pw">Admin password <small>Shown in the black window when the engine starts, and saved in config.json as "adminPassword".</small>
+      <input id="pw" type="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit">Unlock</button>
+    <p class="msg" id="loginMsg" role="status"></p>
+  </form>
+
+  <form class="card" id="coinForm" hidden>
+    <label for="mint">Coin CA (contract address) <small>Paste it the moment your coin is live on pump.fun.</small>
+      <input id="mint" placeholder="e.g. 7xKq...pump" spellcheck="false" autocomplete="off">
+    </label>
+    <label for="name">Ticker <small>Shown on the Buy button.</small>
+      <input id="name" placeholder="$PACKWARS" autocomplete="off">
+    </label>
+    <label for="dev">Dev wallet <small>Optional. Never drawn in free holder duels.</small>
+      <input id="dev" placeholder="your dev wallet address" spellcheck="false" autocomplete="off">
+    </label>
+    <label for="buy">Buy link <small>Optional. Leave empty to use pump.fun/coin/&lt;CA&gt;.</small>
+      <input id="buy" placeholder="https://pump.fun/coin/..." spellcheck="false" autocomplete="off">
+    </label>
+    <button type="submit" id="saveBtn">Save and go live</button>
+    <p class="msg" id="saveMsg" role="status"></p>
+    <div class="now" id="now"></div>
+  </form>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let password = "";
+async function call(body) {
+  const res = await fetch("/api/admin/coin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ password, ...body }) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+function showNow(d) {
+  $("now").innerHTML = d.mint
+    ? `Live now: <b>${d.name}</b> · CA <b>${d.mint}</b><br>Buy button: <a href="${d.buyUrl || "https://pump.fun/coin/" + d.mint}" target="_blank" rel="noopener">${d.buyUrl || "pump.fun/coin/" + d.mint}</a><br>Free holder duels: <b>${d.holderDuels ? "on" : "off"}</b>`
+    : "No coin set yet. The site shows \"Coin launching soon\" until you save a CA.";
+}
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  password = $("pw").value.trim();
+  $("loginMsg").className = "msg"; $("loginMsg").textContent = "Checking…";
+  try {
+    const d = await call({ check: true });
+    $("loginForm").hidden = true; $("coinForm").hidden = false;
+    $("mint").value = d.mint || ""; $("name").value = d.name && d.name !== "$YOURCOIN" ? d.name : ""; $("buy").value = d.buyUrl || "";
+    showNow(d); $("mint").focus();
+  } catch (err) { $("loginMsg").className = "msg bad"; $("loginMsg").textContent = err.message; }
+});
+$("coinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("saveBtn").disabled = true; $("saveMsg").className = "msg"; $("saveMsg").textContent = "Saving…";
+  try {
+    const d = await call({ mint: $("mint").value.trim(), name: $("name").value.trim(), devWallet: $("dev").value.trim(), buyUrl: $("buy").value.trim() });
+    $("saveMsg").className = "msg ok"; $("saveMsg").textContent = "Saved. The live site has updated.";
+    $("dev").value = ""; showNow(d);
+  } catch (err) { $("saveMsg").className = "msg bad"; $("saveMsg").textContent = err.message; }
+  $("saveBtn").disabled = false;
+});
+</script>
+</body>
+</html>

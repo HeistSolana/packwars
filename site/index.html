@@ -1,0 +1,1483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="favicon-64.png">
+<title>PACKWARS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,800..900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: arcade stage up top (two packs face off), then a two-column board: fund + holders | recent rounds. Single dark look to match the brand. */
+:root {
+  --ink: #0C0C12;
+  --ink-2: #15151F;
+  --ink-3: #20202D;
+  --line: #2C2C3D;
+  --text: #F2F1F7;
+  --muted: #9C9AB3;
+  --lime: #C8FF3E;
+  --lime-d: #8FCC12;
+  --pink: #FF4F93;
+  --pink-d: #C92A68;
+  --gold: #FFC93E;
+  --red: #FF5A5A;
+  --display: "Archivo", "Arial Black", Impact, system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--ink); color: var(--text); }
+body {
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+  background-image:
+    radial-gradient(60% 40% at 15% 0%, color-mix(in srgb, var(--lime) 9%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 85% 0%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 70%);
+  background-repeat: no-repeat;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; border-radius: 4px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* header */
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 18px; flex-wrap: wrap; }
+.logo svg { height: 48px; width: auto; display: block; }
+.top-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; font-weight: 600; background: var(--ink-2); white-space: nowrap; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 0 color-mix(in srgb, var(--lime) 60%, transparent); animation: ping 1.8s infinite; }
+.pill.demo .dot { background: var(--gold); animation: none; }
+@keyframes ping { 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; cursor: pointer; border: 0; }
+.btn.lime { background: var(--lime); color: var(--ink); }
+.btn.ghost { background: transparent; border: 1px solid var(--line); }
+.btn.ghost:hover { border-color: var(--muted); }
+
+/* hero */
+.hero { padding-block: 28px 8px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 112%; font-size: clamp(38px, 7vw, 76px); line-height: .95; letter-spacing: -.01em; margin: 10px 0 14px; text-wrap: balance; text-transform: uppercase; }
+h1 .l { color: var(--lime); } h1 .p { color: var(--pink); }
+.lede { color: var(--muted); max-width: 60ch; font-size: 17px; margin: 0; }
+.lede b { color: var(--text); }
+
+/* stage */
+.stage { margin-top: 30px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(180deg, var(--ink-2), var(--ink)); padding: 22px; }
+.stage-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.stage-head h2 { font-family: var(--display); font-weight: 900; font-stretch: 100%; font-size: 22px; margin: 0; letter-spacing: .01em; text-transform: uppercase; }
+.arena { display: grid; grid-template-columns: 1fr auto 1fr; gap: 18px; align-items: center; }
+.vs { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; font-size: 44px; color: var(--text); position: relative; padding: 0 6px; }
+.vs::before { content: ""; position: absolute; inset: -18px -14px; background: conic-gradient(from 20deg, var(--lime), var(--pink), var(--lime)); filter: blur(22px); opacity: .35; z-index: -1; border-radius: 50%; }
+.side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.side.b { align-items: flex-end; text-align: right; }
+.who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.who .w { font-family: var(--mono); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.who .h { font-size: 13px; color: var(--muted); }
+.side.a .w { color: var(--lime); } .side.b .w { color: var(--pink); }
+
+.card { width: 100%; max-width: 300px; aspect-ratio: 5 / 7; perspective: 900px; }
+.card-inner { position: relative; width: 100%; height: 100%; transition: transform .7s cubic-bezier(.2,.8,.2,1); transform-style: preserve-3d; }
+.card.hidden .card-inner { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; border-radius: 16px; backface-visibility: hidden; overflow: hidden; }
+.front { background: var(--ink-3); border: 2px solid var(--line); display: flex; flex-direction: column; padding: 14px; gap: 10px; }
+.side.a .front { border-color: color-mix(in srgb, var(--lime) 55%, var(--line)); }
+.side.b .front { border-color: color-mix(in srgb, var(--pink) 55%, var(--line)); }
+.slab-top { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.art { flex: 1; border-radius: 10px; position: relative; overflow: hidden; display: grid; place-items: center; }
+.side.a .art { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--lime) 35%, transparent), var(--ink) 70%); }
+.side.b .art { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--pink) 35%, transparent), var(--ink) 70%); }
+.art canvas { width: 100%; height: 100%; display: block; }
+.rar { position: absolute; left: 8px; top: 8px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.55); letter-spacing: .04em; text-transform: uppercase; }
+.rar[data-r="Epic"] { color: var(--gold); } .rar[data-r="Rare"] { color: #7FD4FF; }
+.card-name { font-family: var(--display); font-weight: 800; font-stretch: 100%; font-size: 18px; line-height: 1.1; }
+.val { font-family: var(--display); font-weight: 900; font-stretch: 112%; font-size: 30px; font-variant-numeric: tabular-nums; line-height: 1; }
+.val small { font-family: var(--body); font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.back { transform: rotateY(180deg); display: grid; place-items: center; border: 2px solid var(--ink); }
+.side.a .back { background: repeating-linear-gradient(135deg, var(--lime) 0 18px, var(--lime-d) 18px 36px); }
+.side.b .back { background: repeating-linear-gradient(135deg, var(--pink) 0 18px, var(--pink-d) 18px 36px); }
+.back span { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; color: var(--ink); font-size: 28px; transform: rotate(-12deg); }
+.side.win .front { box-shadow: 0 0 0 3px var(--gold), 0 18px 60px -10px color-mix(in srgb, var(--gold) 45%, transparent); }
+.badge { font-family: var(--display); font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 13px; letter-spacing: .05em; padding: 4px 10px; border-radius: 6px; }
+.badge.win { background: var(--gold); color: var(--ink); }
+.badge.lose { background: var(--ink-3); color: var(--muted); }
+
+.verdict { margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--line); display: flex; gap: 16px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.verdict p { margin: 0; font-size: 16px; }
+.verdict .pot { font-family: var(--display); font-weight: 900; font-size: 20px; color: var(--gold); }
+
+.proof { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.proof div { background: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.proof .k { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.proof .v { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+
+/* board */
+.board { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 20px; margin-top: 28px; }
+.panel { border: 1px solid var(--line); border-radius: 16px; background: var(--ink-2); padding: 20px; min-width: 0; }
+.panel h3 { font-family: var(--display); font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 4px; }
+.panel .sub { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
+.col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+.fund-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fund-num { font-family: var(--display); font-weight: 900; font-size: 34px; font-variant-numeric: tabular-nums; }
+.fund-num small { font-size: 15px; color: var(--muted); font-weight: 600; }
+.meter { height: 14px; border-radius: 999px; background: var(--ink); border: 1px solid var(--line); overflow: hidden; margin: 12px 0 8px; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--lime), var(--pink)); border-radius: 999px; }
+.fund-note { font-size: 13px; color: var(--muted); }
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.list li:first-child { border-top: 0; }
+.list .w { font-family: var(--mono); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list .pct { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.list .rec { font-family: var(--mono); font-size: 13px; text-align: right; min-width: 52px; }
+.list .ex { color: var(--muted); }
+.list .ex .why { font-size: 12px; }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 0 8px 10px; }
+td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.num { text-align: right; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--ink-3); }
+tr.row.sel td { background: color-mix(in srgb, var(--gold) 8%, var(--ink-2)); }
+.vsline { font-family: var(--mono); font-size: 13px; }
+.vsline .wn { color: var(--gold); font-weight: 600; }
+
+/* how */
+.how { margin-top: 28px; }
+.steps { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; counter-reset: s; }
+.steps li { counter-increment: s; border-top: 3px solid var(--line); padding-top: 12px; }
+.steps li:nth-child(odd) { border-color: var(--lime); } .steps li:nth-child(even) { border-color: var(--pink); }
+.steps li::before { content: counter(s); font-family: var(--display); font-weight: 900; font-style: italic; font-size: 28px; display: block; line-height: 1; margin-bottom: 6px; }
+.steps b { display: block; font-size: 15px; margin-bottom: 2px; }
+.steps p { margin: 0; font-size: 14px; color: var(--muted); }
+footer { margin-top: 36px; font-size: 13px; color: var(--muted); display: flex; gap: 12px; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 16px; }
+
+
+/* pack picture: original foil pack, coloured by pack, or the official art if supplied in packs/<code>.png */
+.pack { --pk: var(--lime); position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.pack-foil { position: absolute; inset: 0; background:
+    linear-gradient(115deg, transparent 30%, rgba(255,255,255,.35) 45%, transparent 60%),
+    repeating-linear-gradient(135deg, color-mix(in srgb, var(--pk) 100%, #000 0%) 0 16px, color-mix(in srgb, var(--pk) 78%, #000) 16px 32px);
+  clip-path: polygon(0 4%, 6.25% 0, 12.5% 4%, 18.75% 0, 25% 4%, 31.25% 0, 37.5% 4%, 43.75% 0, 50% 4%, 56.25% 0, 62.5% 4%, 68.75% 0, 75% 4%, 81.25% 0, 87.5% 4%, 93.75% 0, 100% 4%,
+    100% 96%, 93.75% 100%, 87.5% 96%, 81.25% 100%, 75% 96%, 68.75% 100%, 62.5% 96%, 56.25% 100%, 50% 96%, 43.75% 100%, 37.5% 96%, 31.25% 100%, 25% 96%, 18.75% 100%, 12.5% 96%, 6.25% 100%, 0 96%); }
+.pack-label { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 12px; background: var(--ink); border-radius: 10px; transform: rotate(-6deg); text-align: center; max-width: 80%; }
+.pack-label .pk-brand { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+.pack-label .pk-name { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 112%; font-size: 20px; line-height: 1; color: var(--pk); text-transform: uppercase; }
+.pack-label .pk-price { font-family: var(--display); font-weight: 900; font-size: 15px; color: var(--text); }
+.pack img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.back { background: transparent !important; border: 0 !important; }
+.pack-thumb { width: 38px; height: 54px; flex: none; }
+.pack-thumb .pack-label { display: none; }
+.stage-pack { display: inline-flex; align-items: center; gap: 10px; }
+
+
+/* ---------- pack rip reveal ---------- */
+.arena { position: relative; }
+.fx { position: absolute; left: -40px; top: -40px; width: calc(100% + 80px); height: calc(100% + 80px); pointer-events: none; z-index: 5; }
+.card { position: relative; transition: filter .5s, transform .5s; }
+.card .card-inner { transition: transform .55s cubic-bezier(.2,.9,.25,1.25), opacity .35s; }
+.card.ripped .card-inner { transition-delay: .2s; }
+.rip { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; }
+.card.sealed .rip, .card.ripped .rip { opacity: 1; }
+.rip > div { position: absolute; inset: 0; }
+.rip-top { clip-path: polygon(0 0, 100% 0, 100% 20%, 90% 17%, 80% 21%, 70% 16%, 60% 20%, 50% 17%, 40% 21%, 30% 16%, 20% 20%, 10% 17%, 0 21%); }
+.rip-body { clip-path: polygon(0 21%, 10% 17%, 20% 20%, 30% 16%, 40% 21%, 50% 17%, 60% 20%, 70% 16%, 80% 21%, 90% 17%, 100% 20%, 100% 100%, 0 100%); }
+.card.shake .rip { animation: shake .08s linear infinite; }
+@keyframes shake {
+  0% { transform: translate(calc(var(--s, 2px) * -1), 0) rotate(-1deg); }
+  25% { transform: translate(var(--s, 2px), calc(var(--s, 2px) * -.5)) rotate(1deg); }
+  50% { transform: translate(calc(var(--s, 2px) * -.5), var(--s, 2px)) rotate(-.6deg); }
+  75% { transform: translate(var(--s, 2px), 0) rotate(.8deg); }
+  100% { transform: translate(0, 0); }
+}
+.card.ripped .rip-top { animation: flyoff .75s cubic-bezier(.2,.7,.3,1) forwards; }
+.side.b .card.ripped .rip-top { animation-name: flyoff-r; }
+@keyframes flyoff { 30% { opacity: 1; } to { transform: translate(-70%, -130%) rotate(-42deg); opacity: 0; } }
+@keyframes flyoff-r { 30% { opacity: 1; } to { transform: translate(70%, -130%) rotate(42deg); opacity: 0; } }
+.card.ripped .rip-body { animation: drop .6s .28s cubic-bezier(.5,0,.8,.4) forwards; }
+@keyframes drop { to { transform: translateY(75%) scale(.9) rotate(3deg); opacity: 0; } }
+.card.pop .card-inner { animation: pop .5s cubic-bezier(.2,1.6,.4,1); }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.card.glow-Uncommon .front { box-shadow: 0 0 0 2px var(--lime), 0 0 40px -8px var(--lime); }
+.card.glow-Rare .front { box-shadow: 0 0 0 3px #7FD4FF, 0 0 50px -6px #7FD4FF; }
+.card.glow-Epic .front { animation: epic 1.1s ease-in-out infinite alternate; }
+@keyframes epic { from { box-shadow: 0 0 0 3px var(--gold), 0 0 40px -6px var(--gold); } to { box-shadow: 0 0 0 4px #fff, 0 0 90px 4px var(--gold); } }
+.side.lose-dim .card { filter: grayscale(.85) brightness(.5); transform: rotate(-4deg) scale(.93); }
+.side.b.lose-dim .card { transform: rotate(4deg) scale(.93); }
+.stamp { position: absolute; z-index: 6; top: 40%; font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; font-size: clamp(26px, 5vw, 52px); color: var(--ink); background: var(--gold); padding: 6px 18px; border-radius: 10px; transform: rotate(-8deg) scale(3); opacity: 0; pointer-events: none; white-space: nowrap; box-shadow: 0 12px 50px -8px var(--gold); }
+.stamp.show { animation: stamp .5s cubic-bezier(.2,1.4,.4,1) forwards; }
+@keyframes stamp { to { transform: rotate(-8deg) scale(1); opacity: 1; } }
+.stamp.left { left: 2%; } .stamp.right { right: 2%; } .stamp.center { left: 50%; translate: -50% 0; }
+.stage.quake { animation: quake .45s; }
+@keyframes quake { 10%, 50%, 90% { transform: translate(-7px, 3px); } 30%, 70% { transform: translate(7px, -3px); } }
+.stage.charging { box-shadow: inset 0 0 140px -30px color-mix(in srgb, var(--gold) 55%, transparent); }
+.stage { transition: box-shadow .6s; }
+.vs.count { animation: countpop .32s ease-out; color: var(--gold); }
+@keyframes countpop { from { transform: scale(2.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.vs.ripping { color: #fff; text-shadow: 0 0 28px var(--gold); }
+.btn.rip-btn { background: linear-gradient(90deg, var(--lime), var(--pink)); color: var(--ink); font-family: var(--display); font-style: italic; font-weight: 900; text-transform: uppercase; letter-spacing: .03em; }
+.btn.rip-btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+  .card.shake .rip, .card.ripped .rip-top, .card.ripped .rip-body, .card.pop .card-inner, .card.glow-Epic .front, .stage.quake, .vs.count { animation: none; }
+  .stamp.show { animation: none; opacity: 1; transform: rotate(-8deg); }
+}
+
+
+.slab-img { position: absolute; inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); object-fit: contain; filter: drop-shadow(0 8px 18px rgba(0,0,0,.5)); }
+
+.sent { color: var(--muted); font-size: 13px; margin-left: 6px; } .sent a { color: var(--gold); }
+
+/* bot wallet transparency panel */
+.wallet { margin-top: 20px; }
+.wallet-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.addr { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+.addr .mono { font-size: 13px; overflow-wrap: anywhere; background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.btn.sm { padding: 6px 10px; font-size: 13px; }
+.wstats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 16px 0; }
+.wstats > div { background: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wstats .k { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.wstats .v { font-family: var(--display); font-weight: 900; font-size: 22px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.wstats .s { font-size: 12px; color: var(--muted); }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
+.check .ico { font-weight: 900; font-size: 16px; line-height: 1.2; }
+.check.good { background: color-mix(in srgb, var(--lime) 10%, transparent); border: 1px solid color-mix(in srgb, var(--lime) 45%, transparent); }
+.check.good .ico { color: var(--lime); }
+.check.bad { background: color-mix(in srgb, var(--red) 14%, transparent); border: 1px solid var(--red); }
+.check.bad .ico { color: var(--red); }
+.check a { color: var(--gold); }
+.proof-link { display: inline-block; font-size: 13px; color: var(--gold); margin-bottom: 14px; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; background: var(--ink-3); color: var(--muted); }
+.chip.fees-in { background: color-mix(in srgb, var(--lime) 18%, transparent); color: var(--lime); }
+.chip.swap { background: color-mix(in srgb, #7FD4FF 18%, transparent); color: #7FD4FF; }
+.chip.pack { background: color-mix(in srgb, var(--gold) 18%, transparent); color: var(--gold); }
+.chip.card-out { background: color-mix(in srgb, var(--pink) 20%, transparent); color: var(--pink); }
+.chip.other-out { background: var(--red); color: var(--ink); }
+td.pos { color: var(--lime); }
+tr.flag td { background: color-mix(in srgb, var(--red) 10%, transparent); }
+
+
+/* ---------- deposit duels (arena) ---------- */
+.arena-panel { margin-top: 24px; }
+.ap-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.pack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; margin: 16px 0 12px; }
+.pack-card { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 14px; align-items: center; background: var(--ink); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.pack-card .pk-art { width: 118px; height: 160px; overflow: visible; }
+.pack-card .pk-art img { transform: scale(1.45); transform-origin: center; filter: drop-shadow(0 8px 14px rgba(0,0,0,.5)); }
+.pack-card .pk-art.has-img .pack-foil { display: none; }
+.pack-card .pk-art .pack-label { display: none; }
+.pack-card h4 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 16px; text-transform: uppercase; line-height: 1.1; }
+.pack-card .price { font-family: var(--display); font-weight: 900; font-size: 22px; }
+.pack-card .price small { font-family: var(--body); font-weight: 600; font-size: 12px; color: var(--muted); margin-left: 4px; }
+.pack-card .odds { font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
+.pack-card .row2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.waiting { font-size: 12px; font-weight: 700; color: var(--lime); }
+.waiting.none { color: var(--muted); font-weight: 500; }
+.age { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; margin: 4px 0 10px; cursor: pointer; }
+.age input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--lime); }
+.my-seat { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--line); background: var(--ink-3); display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.my-seat.win { border-color: var(--gold); background: color-mix(in srgb, var(--gold) 12%, var(--ink-2)); }
+.my-seat.wait { border-color: color-mix(in srgb, var(--lime) 50%, var(--line)); }
+.my-seat p { margin: 0; font-size: 15px; }
+.my-seat a { color: var(--gold); }
+.arena-msg { font-size: 14px; color: var(--pink); min-height: 1.2em; margin: 0 0 8px; }
+.fine { font-size: 13px; color: var(--muted); margin: 0; max-width: 75ch; }
+.kind { font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; }
+.kind.holder { background: color-mix(in srgb, var(--lime) 18%, transparent); color: var(--lime); }
+.kind.deposit { background: color-mix(in srgb, var(--pink) 20%, transparent); color: var(--pink); }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sp .8s linear infinite; vertical-align: -1px; margin-right: 6px; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+
+/* slow face-down flip reveal */
+.card-back { position: absolute; inset: 0; border-radius: 16px; border: 3px solid var(--ink-3); display: grid; place-items: center;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--gold) 30%, transparent), transparent 55%),
+    repeating-linear-gradient(45deg, color-mix(in srgb, var(--lime) 22%, var(--ink)) 0 10px, var(--ink) 10px 20px),
+    var(--ink); }
+.side.b .card-back { background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--gold) 30%, transparent), transparent 55%),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--pink) 24%, var(--ink)) 0 10px, var(--ink) 10px 20px),
+    var(--ink); }
+.card-back span { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; font-size: 26px; line-height: .95; text-align: center;
+  color: var(--text); background: var(--ink); padding: 10px 14px; border-radius: 10px; border: 2px solid var(--line); transform: rotate(-8deg); }
+.card.sealed .card-inner { transform: translateY(14%) scale(.88) rotateY(180deg); opacity: 0; }
+.card.facedown .card-inner { transform: rotateY(180deg); }
+.card.flipping .card-inner { animation: slowflip 2.1s cubic-bezier(.3,.05,.2,1) forwards; }
+@keyframes slowflip {
+  0%   { transform: rotateY(180deg) scale(1); }
+  20%  { transform: rotateY(170deg) scale(1.03) translateY(-2%); }
+  55%  { transform: rotateY(90deg) scale(1.1) translateY(-5%); }
+  85%  { transform: rotateY(-8deg) scale(1.04) translateY(-2%); }
+  100% { transform: rotateY(0deg) scale(1); }
+}
+.card.counting .front { animation: anticipation 1s ease-in-out infinite alternate; }
+@keyframes anticipation { from { box-shadow: 0 0 0 2px var(--line), 0 0 0 0 transparent; } to { box-shadow: 0 0 0 2px var(--text), 0 0 36px -6px var(--text); } }
+.card.counting .rar { opacity: 0; }
+.rar { transition: opacity .4s; }
+.card.facedown .val, .card.sealed .val { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .card.flipping .card-inner, .card.counting .front { animation: none; } }
+
+
+.cat-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 0; }
+.cat-tabs button { font: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--ink); color: var(--muted); cursor: pointer; }
+.cat-tabs button[aria-selected="true"] { background: var(--text); color: var(--ink); border-color: var(--text); }
+.cat-tabs button .n { font-weight: 500; opacity: .7; margin-left: 4px; }
+.cat-tabs button .hot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--lime); margin-left: 6px; vertical-align: 1px; }
+
+
+/* ---------- two views: home + duel ---------- */
+.cta-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 22px; }
+.duel-cta { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; font-size: clamp(30px, 6vw, 44px); letter-spacing: .04em;
+  padding: 16px 56px; border-radius: 18px; color: var(--ink); border: 0; cursor: pointer;
+  background: linear-gradient(90deg, var(--lime), var(--pink)); box-shadow: 0 14px 50px -12px color-mix(in srgb, var(--pink) 70%, transparent); transition: transform .15s, box-shadow .15s; }
+.duel-cta:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 18px 60px -10px color-mix(in srgb, var(--pink) 85%, transparent); }
+.duel-cta:active { transform: scale(.98); }
+.section-head { margin: 44px 0 14px; }
+.section-head h2 { font-family: var(--display); font-weight: 900; font-stretch: 112%; text-transform: uppercase; font-size: clamp(26px, 4vw, 36px); margin: 6px 0 6px; line-height: 1; text-wrap: balance; }
+.section-head .sub { max-width: 65ch; }
+.fee-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; }
+.fee-panel .fund-num { font-size: clamp(34px, 6vw, 52px); }
+.fee-panel .meter { height: 22px; }
+.fee-goal { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.recent { margin-top: 28px; }
+.how { margin-top: 44px; }
+.how-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin-top: 10px; }
+.how-grid h3 { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: 18px; margin: 0 0 4px; }
+.how-grid .steps { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.proof-points { list-style: none; padding: 0; margin: 0 0 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.proof-points li { border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--ink-2); font-size: 14px; color: var(--muted); }
+.proof-points b { display: block; color: var(--text); font-size: 15px; margin-bottom: 4px; }
+.duel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 18px 4px; }
+.duel-title { font-family: var(--display); font-style: italic; font-weight: 900; font-stretch: 125%; font-size: clamp(40px, 8vw, 72px); margin: 0; line-height: 1;
+  background: linear-gradient(90deg, var(--lime), var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#duelView .arena-panel { margin-top: 10px; }
+#duelView .stage { margin-top: 20px; }
+.view-in { animation: viewin .35s ease-out; }
+@keyframes viewin { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.ca-chip { font-size: 13px; padding: 7px 12px; }
+.ca-chip .mono { color: var(--lime); }
+#buyLink.soon { background: var(--ink-3); color: var(--muted); pointer-events: none; }
+@media (max-width: 860px) {
+  .fee-grid, .how-grid { grid-template-columns: minmax(0, 1fr); }
+  .proof-points { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .view-in { animation: none; } .duel-cta { transition: none; } }
+
+@media (max-width: 860px) {
+  .wstats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .arena { grid-template-columns: 1fr 1fr; }
+  .vs { grid-column: 1 / -1; grid-row: 1; justify-self: center; font-size: 30px; }
+  .side.b { align-items: flex-start; text-align: left; }
+  .stage { padding: 14px; }
+  .card-name { font-size: 15px; } .val { font-size: 22px; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .logo svg { height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-inner { transition: none; } .dot { animation: none; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo" aria-label="PACKWARS"><svg role="img" aria-label="PACKWARS" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1390 380">
+<path d="M217.87,280.03L70.11,90.90L61.64,67.07L82.72,81.05L230.48,270.18Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M219.91,272.08L76.47,88.48L70.26,78.10L78.83,86.63L222.28,270.24Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M199.75,294.19L248.60,256.02L253.45,268.72L210.90,301.97Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M227.84,288.73L236.51,281.96L258.06,309.54L249.39,316.31Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M265.74,313.69L267.56,317.98L267.00,322.60L264.19,326.32L259.90,328.14L255.28,327.57L251.56,324.77L249.74,320.48L250.31,315.86L253.11,312.14L257.40,310.32L262.02,310.88Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M125.52,270.18L273.28,81.05L294.36,67.07L285.89,90.90L138.13,280.03Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M133.72,270.24L277.17,86.63L285.74,78.10L279.53,88.48L136.09,272.08Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M107.40,256.02L156.25,294.19L145.10,301.97L102.55,268.72Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M119.49,281.96L128.16,288.73L106.61,316.31L97.94,309.54Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M104.44,324.77L100.72,327.57L96.10,328.14L91.81,326.32L89.00,322.60L88.44,317.98L90.26,313.69L93.98,310.88L98.60,310.32L102.89,312.14L105.69,315.86L106.26,320.48Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="17.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M217.87,280.03L70.11,90.90L61.64,67.07L82.72,81.05L230.48,270.18Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M219.91,272.08L76.47,88.48L70.26,78.10L78.83,86.63L222.28,270.24Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M199.75,294.19L248.60,256.02L253.45,268.72L210.90,301.97Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M227.84,288.73L236.51,281.96L258.06,309.54L249.39,316.31Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M265.74,313.69L267.56,317.98L267.00,322.60L264.19,326.32L259.90,328.14L255.28,327.57L251.56,324.77L249.74,320.48L250.31,315.86L253.11,312.14L257.40,310.32L262.02,310.88Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M125.52,270.18L273.28,81.05L294.36,67.07L285.89,90.90L138.13,280.03Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M133.72,270.24L277.17,86.63L285.74,78.10L279.53,88.48L136.09,272.08Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M107.40,256.02L156.25,294.19L145.10,301.97L102.55,268.72Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M119.49,281.96L128.16,288.73L106.61,316.31L97.94,309.54Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M104.44,324.77L100.72,327.57L96.10,328.14L91.81,326.32L89.00,322.60L88.44,317.98L90.26,313.69L93.98,310.88L98.60,310.32L102.89,312.14L105.69,315.86L106.26,320.48Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="9.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M217.87,280.03L70.11,90.90L61.64,67.07L82.72,81.05L230.48,270.18Z" fill="#E4E7F2"/>
+<path d="M219.91,272.08L76.47,88.48L70.26,78.10L78.83,86.63L222.28,270.24Z" fill="#9CA2B8"/>
+<path d="M199.75,294.19L248.60,256.02L253.45,268.72L210.90,301.97Z" fill="#FFC93E"/>
+<path d="M227.84,288.73L236.51,281.96L258.06,309.54L249.39,316.31Z" fill="#5A3B1C"/>
+<path d="M265.74,313.69L267.56,317.98L267.00,322.60L264.19,326.32L259.90,328.14L255.28,327.57L251.56,324.77L249.74,320.48L250.31,315.86L253.11,312.14L257.40,310.32L262.02,310.88Z" fill="#FFC93E"/>
+<path d="M125.52,270.18L273.28,81.05L294.36,67.07L285.89,90.90L138.13,280.03Z" fill="#E4E7F2"/>
+<path d="M133.72,270.24L277.17,86.63L285.74,78.10L279.53,88.48L136.09,272.08Z" fill="#9CA2B8"/>
+<path d="M107.40,256.02L156.25,294.19L145.10,301.97L102.55,268.72Z" fill="#FFC93E"/>
+<path d="M119.49,281.96L128.16,288.73L106.61,316.31L97.94,309.54Z" fill="#5A3B1C"/>
+<path d="M104.44,324.77L100.72,327.57L96.10,328.14L91.81,326.32L89.00,322.60L88.44,317.98L90.26,313.69L93.98,310.88L98.60,310.32L102.89,312.14L105.69,315.86L106.26,320.48Z" fill="#FFC93E"/>
+<path d="M103.00,131.00L104.88,128.60L106.75,126.20L108.62,123.80L110.50,121.40L112.38,119.00L114.25,121.40L116.12,123.80L118.00,126.20L119.88,128.60L121.75,131.00L123.62,128.60L125.50,126.20L127.38,123.80L129.25,121.40L131.12,119.00L133.00,121.40L134.88,123.80L136.75,126.20L138.62,128.60L140.50,131.00L142.38,128.60L144.25,126.20L146.12,123.80L148.00,121.40L149.88,119.00L151.75,121.40L153.62,123.80L155.50,126.20L157.38,128.60L159.25,131.00L161.12,128.60L163.00,126.20L164.88,123.80L166.75,121.40L168.62,119.00L170.50,121.40L172.38,123.80L174.25,126.20L176.12,128.60L178.00,131.00L179.88,128.60L181.75,126.20L183.62,123.80L185.50,121.40L187.38,119.00L189.25,121.40L191.12,123.80L193.00,126.20L194.88,128.60L196.75,131.00L198.62,128.60L200.50,126.20L202.38,123.80L204.25,121.40L206.12,119.00L208.00,121.40L209.88,123.80L211.75,126.20L213.62,128.60L215.50,131.00L217.38,128.60L219.25,126.20L221.12,123.80L223.00,121.40L224.88,119.00L226.75,121.40L228.62,123.80L230.50,126.20L232.38,128.60L234.25,131.00L236.12,128.60L238.00,126.20L239.88,123.80L241.75,121.40L243.62,119.00L245.50,121.40L247.38,123.80L249.25,126.20L251.12,128.60L253.00,131.00L253.00,133.83L253.00,136.67L253.00,139.50L253.00,142.33L253.00,145.17L253.00,148.00L253.00,150.83L253.00,153.67L253.00,156.50L253.00,159.33L253.00,162.17L253.00,165.00L253.00,167.83L253.00,170.67L253.00,173.50L253.00,176.33L253.00,179.17L253.00,182.00L253.00,184.83L252.99,187.67L252.89,190.50L252.72,193.33L252.46,196.17L252.11,199.00L251.69,201.83L251.17,204.67L250.58,207.50L249.90,210.33L249.14,213.17L248.29,216.00L247.37,218.83L246.36,221.67L245.26,224.50L244.09,227.33L242.83,230.17L241.50,233.00L240.08,235.83L238.58,238.67L237.00,241.50L235.34,244.33L233.59,247.17L231.77,250.00L229.86,252.83L227.87,255.67L225.80,258.50L223.64,261.33L221.40,264.17L219.06,267.00L216.64,269.83L214.11,272.67L211.49,275.50L208.76,278.33L205.90,281.17L202.92,284.00L199.78,286.83L196.45,289.67L192.89,292.50L189.00,295.33L184.54,298.17L178.00,301.00L171.46,298.17L167.00,295.33L163.11,292.50L159.55,289.67L156.22,286.83L153.08,284.00L150.10,281.17L147.24,278.33L144.51,275.50L141.89,272.67L139.36,269.83L136.94,267.00L134.60,264.17L132.36,261.33L130.20,258.50L128.13,255.67L126.14,252.83L124.23,250.00L122.41,247.17L120.66,244.33L119.00,241.50L117.42,238.67L115.92,235.83L114.50,233.00L113.17,230.17L111.91,227.33L110.74,224.50L109.64,221.67L108.63,218.83L107.71,216.00L106.86,213.17L106.10,210.33L105.42,207.50L104.83,204.67L104.31,201.83L103.89,199.00L103.54,196.17L103.28,193.33L103.11,190.50L103.01,187.67L103.00,184.83L103.00,182.00L103.00,179.17L103.00,176.33L103.00,173.50L103.00,170.67L103.00,167.83L103.00,165.00L103.00,162.17L103.00,159.33L103.00,156.50L103.00,153.67L103.00,150.83L103.00,148.00L103.00,145.17L103.00,142.33L103.00,139.50L103.00,136.67L103.00,133.83Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="23.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M103.00,131.00L104.88,128.60L106.75,126.20L108.62,123.80L110.50,121.40L112.38,119.00L114.25,121.40L116.12,123.80L118.00,126.20L119.88,128.60L121.75,131.00L123.62,128.60L125.50,126.20L127.38,123.80L129.25,121.40L131.12,119.00L133.00,121.40L134.88,123.80L136.75,126.20L138.62,128.60L140.50,131.00L142.38,128.60L144.25,126.20L146.12,123.80L148.00,121.40L149.88,119.00L151.75,121.40L153.62,123.80L155.50,126.20L157.38,128.60L159.25,131.00L161.12,128.60L163.00,126.20L164.88,123.80L166.75,121.40L168.62,119.00L170.50,121.40L172.38,123.80L174.25,126.20L176.12,128.60L178.00,131.00L179.88,128.60L181.75,126.20L183.62,123.80L185.50,121.40L187.38,119.00L189.25,121.40L191.12,123.80L193.00,126.20L194.88,128.60L196.75,131.00L198.62,128.60L200.50,126.20L202.38,123.80L204.25,121.40L206.12,119.00L208.00,121.40L209.88,123.80L211.75,126.20L213.62,128.60L215.50,131.00L217.38,128.60L219.25,126.20L221.12,123.80L223.00,121.40L224.88,119.00L226.75,121.40L228.62,123.80L230.50,126.20L232.38,128.60L234.25,131.00L236.12,128.60L238.00,126.20L239.88,123.80L241.75,121.40L243.62,119.00L245.50,121.40L247.38,123.80L249.25,126.20L251.12,128.60L253.00,131.00L253.00,133.83L253.00,136.67L253.00,139.50L253.00,142.33L253.00,145.17L253.00,148.00L253.00,150.83L253.00,153.67L253.00,156.50L253.00,159.33L253.00,162.17L253.00,165.00L253.00,167.83L253.00,170.67L253.00,173.50L253.00,176.33L253.00,179.17L253.00,182.00L253.00,184.83L252.99,187.67L252.89,190.50L252.72,193.33L252.46,196.17L252.11,199.00L251.69,201.83L251.17,204.67L250.58,207.50L249.90,210.33L249.14,213.17L248.29,216.00L247.37,218.83L246.36,221.67L245.26,224.50L244.09,227.33L242.83,230.17L241.50,233.00L240.08,235.83L238.58,238.67L237.00,241.50L235.34,244.33L233.59,247.17L231.77,250.00L229.86,252.83L227.87,255.67L225.80,258.50L223.64,261.33L221.40,264.17L219.06,267.00L216.64,269.83L214.11,272.67L211.49,275.50L208.76,278.33L205.90,281.17L202.92,284.00L199.78,286.83L196.45,289.67L192.89,292.50L189.00,295.33L184.54,298.17L178.00,301.00L171.46,298.17L167.00,295.33L163.11,292.50L159.55,289.67L156.22,286.83L153.08,284.00L150.10,281.17L147.24,278.33L144.51,275.50L141.89,272.67L139.36,269.83L136.94,267.00L134.60,264.17L132.36,261.33L130.20,258.50L128.13,255.67L126.14,252.83L124.23,250.00L122.41,247.17L120.66,244.33L119.00,241.50L117.42,238.67L115.92,235.83L114.50,233.00L113.17,230.17L111.91,227.33L110.74,224.50L109.64,221.67L108.63,218.83L107.71,216.00L106.86,213.17L106.10,210.33L105.42,207.50L104.83,204.67L104.31,201.83L103.89,199.00L103.54,196.17L103.28,193.33L103.11,190.50L103.01,187.67L103.00,184.83L103.00,182.00L103.00,179.17L103.00,176.33L103.00,173.50L103.00,170.67L103.00,167.83L103.00,165.00L103.00,162.17L103.00,159.33L103.00,156.50L103.00,153.67L103.00,150.83L103.00,148.00L103.00,145.17L103.00,142.33L103.00,139.50L103.00,136.67L103.00,133.83Z" fill="#0C0C12" stroke="#0C0C12" stroke-width="13.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M103.00,131.00L103.94,129.80L104.88,128.60L105.81,127.40L106.75,126.20L107.69,125.00L108.62,123.80L109.56,122.60L110.50,121.40L111.44,120.20L112.38,119.00L113.31,120.20L114.25,121.40L115.19,122.60L116.12,123.80L117.06,125.00L118.00,126.20L118.94,127.40L119.88,128.60L120.81,129.80L121.75,131.00L122.69,129.80L123.62,128.60L124.56,127.40L125.50,126.20L126.44,125.00L127.38,123.80L128.31,122.60L129.25,121.40L130.19,120.20L131.12,119.00L132.06,120.20L133.00,121.40L133.94,122.60L134.88,123.80L135.81,125.00L136.75,126.20L137.69,127.40L138.62,128.60L139.56,129.80L140.50,131.00L141.44,129.80L142.38,128.60L143.31,127.40L144.25,126.20L145.19,125.00L146.12,123.80L147.06,122.60L148.00,121.40L148.94,120.20L149.88,119.00L150.81,120.20L151.75,121.40L152.69,122.60L153.62,123.80L154.56,125.00L155.50,126.20L156.44,127.40L157.38,128.60L158.31,129.80L159.25,131.00L160.19,129.80L161.12,128.60L162.06,127.40L163.00,126.20L163.94,125.00L164.88,123.80L165.81,122.60L166.75,121.40L167.69,120.20L168.62,119.00L169.56,120.20L170.50,121.40L171.44,122.60L172.38,123.80L173.31,125.00L182.50,158.50L166.50,188.50L183.50,218.50L168.50,252.00L177.50,276.00L173.50,303.00L171.46,298.17L167.00,295.33L163.11,292.50L159.55,289.67L156.22,286.83L153.08,284.00L150.10,281.17L147.24,278.33L144.51,275.50L141.89,272.67L139.36,269.83L136.94,267.00L134.60,264.17L132.36,261.33L130.20,258.50L128.13,255.67L126.14,252.83L124.23,250.00L122.41,247.17L120.66,244.33L119.00,241.50L117.42,238.67L115.92,235.83L114.50,233.00L113.17,230.17L111.91,227.33L110.74,224.50L109.64,221.67L108.63,218.83L107.71,216.00L106.86,213.17L106.10,210.33L105.42,207.50L104.83,204.67L104.31,201.83L103.89,199.00L103.54,196.17L103.28,193.33L103.11,190.50L103.01,187.67L103.00,184.83L103.00,182.00L103.00,179.17L103.00,176.33L103.00,173.50L103.00,170.67L103.00,167.83L103.00,165.00L103.00,162.17L103.00,159.33L103.00,156.50L103.00,153.67L103.00,150.83L103.00,148.00L103.00,145.17L103.00,142.33L103.00,139.50L103.00,136.67L103.00,133.83Z" fill="#C8FF3E"/>
+<path d="M107.00,135.00L177.50,135.00L177.50,147.00L107.00,147.00Z" fill="#7FB80F" fill-opacity="0.85"/>
+<path d="M182.69,125.00L183.62,123.80L184.56,122.60L185.50,121.40L186.44,120.20L187.38,119.00L188.31,120.20L189.25,121.40L190.19,122.60L191.12,123.80L192.06,125.00L193.00,126.20L193.94,127.40L194.88,128.60L195.81,129.80L196.75,131.00L197.69,129.80L198.62,128.60L199.56,127.40L200.50,126.20L201.44,125.00L202.38,123.80L203.31,122.60L204.25,121.40L205.19,120.20L206.12,119.00L207.06,120.20L208.00,121.40L208.94,122.60L209.88,123.80L210.81,125.00L211.75,126.20L212.69,127.40L213.62,128.60L214.56,129.80L215.50,131.00L216.44,129.80L217.38,128.60L218.31,127.40L219.25,126.20L220.19,125.00L221.12,123.80L222.06,122.60L223.00,121.40L223.94,120.20L224.88,119.00L225.81,120.20L226.75,121.40L227.69,122.60L228.62,123.80L229.56,125.00L230.50,126.20L231.44,127.40L232.38,128.60L233.31,129.80L234.25,131.00L235.19,129.80L236.12,128.60L237.06,127.40L238.00,126.20L238.94,125.00L239.88,123.80L240.81,122.60L241.75,121.40L242.69,120.20L243.62,119.00L244.56,120.20L245.50,121.40L246.44,122.60L247.38,123.80L248.31,125.00L249.25,126.20L250.19,127.40L251.12,128.60L252.06,129.80L253.00,131.00L253.00,133.83L253.00,136.67L253.00,139.50L253.00,142.33L253.00,145.17L253.00,148.00L253.00,150.83L253.00,153.67L253.00,156.50L253.00,159.33L253.00,162.17L253.00,165.00L253.00,167.83L253.00,170.67L253.00,173.50L253.00,176.33L253.00,179.17L253.00,182.00L253.00,184.83L252.99,187.67L252.89,190.50L252.72,193.33L252.46,196.17L252.11,199.00L251.69,201.83L251.17,204.67L250.58,207.50L249.90,210.33L249.14,213.17L248.29,216.00L247.37,218.83L246.36,221.67L245.26,224.50L244.09,227.33L242.83,230.17L241.50,233.00L240.08,235.83L238.58,238.67L237.00,241.50L235.34,244.33L233.59,247.17L231.77,250.00L229.86,252.83L227.87,255.67L225.80,258.50L223.64,261.33L221.40,264.17L219.06,267.00L216.64,269.83L214.11,272.67L211.49,275.50L208.76,278.33L205.90,281.17L202.92,284.00L199.78,286.83L196.45,289.67L192.89,292.50L189.00,295.33L184.54,298.17L178.00,301.00L186.50,276.00L177.50,252.00L192.50,218.50L175.50,188.50L191.50,158.50Z" fill="#FF4F93"/>
+<path d="M198.50,135.00L251.00,135.00L251.00,147.00L198.50,147.00Z" fill="#B8235E" fill-opacity="0.85"/>
+<path d="M207.34,113.24L183.36,110.68L186.99,120.84L179.18,113.39L171.76,136.34L174.32,112.36L164.16,115.99L171.61,108.18L148.66,100.76L172.64,103.32L169.01,93.16L176.82,100.61L184.24,77.66L181.68,101.64L191.84,98.01L184.39,105.82Z" fill="#FFFFFF" stroke="#0C0C12" stroke-width="5.0" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M186.70,112.87L179.66,109.50L179.24,113.38L177.40,109.94L172.13,115.70L175.50,108.66L171.62,108.24L175.06,106.40L169.30,101.13L176.34,104.50L176.76,100.62L178.60,104.06L183.87,98.30L180.50,105.34L184.38,105.76L180.94,107.60Z" fill="#FFC93E"/>
+<path d="M345.80,259.24L379.93,259.24L387.10,222.33L404.90,222.33C434.11,222.33 455.60,205.84 460.69,179.67C465.78,153.50 450.69,137.01 421.49,137.01L369.56,137.01ZM392.56,194.27L398.23,165.07L413.49,165.07C423.74,165.07 429.12,170.73 427.39,179.67C425.65,188.61 418.07,194.27 407.81,194.27ZM444.74,259.24L482.06,259.24L491.95,239.14L532.81,239.14L534.72,259.24L573.11,259.24L555.45,137.01L509.51,137.01ZM504.93,212.89L505.47,211.83C512.77,197.06 519.64,182.79 526.55,167.94C527.60,182.79 528.85,197.06 530.24,211.83L530.36,212.89ZM632.04,261.21C663.30,261.21 689.06,242.18 698.12,213.30L663.75,213.30C659.38,224.79 650.17,231.68 638.44,231.68C621.79,231.68 615.21,219.54 619.35,198.21C623.51,176.80 634.91,164.58 651.48,164.58C663.21,164.58 669.82,171.55 669.62,183.12L703.99,183.12C706.24,154.24 687.82,135.04 656.57,135.04C623.18,135.04 592.84,157.36 584.90,198.21C577.02,238.73 598.66,261.21 632.04,261.21ZM695.51,259.24L729.64,259.24L735.15,230.86L753.54,212.65L772.37,259.24L811.42,259.24L780.02,189.51L832.88,137.01L793.43,137.01L763.04,168.43C756.46,175.24 749.91,181.97 743.33,188.78L753.39,137.01L719.27,137.01Z" fill="#7FB80F"/>
+<path d="M847.18,259.24L884.67,259.24L909.51,202.80C911.40,198.54 913.39,193.37 915.95,186.97C916.02,193.37 916.00,198.54 916.23,202.80L919.13,259.24L956.61,259.24L1012.77,137.01L975.70,137.01L956.64,184.43C952.35,195.09 948.31,205.76 944.35,216.42C944.29,205.76 944.23,195.09 943.84,184.43L942.23,137.01L909.09,137.01L889.04,184.43C884.49,195.17 880.19,205.92 876.05,216.67C876.17,205.92 876.29,195.17 876.16,184.43L875.62,137.01L838.54,137.01ZM985.66,259.24L1022.98,259.24L1032.88,239.14L1073.73,239.14L1075.64,259.24L1114.04,259.24L1096.37,137.01L1050.43,137.01ZM1045.85,212.89L1046.39,211.83C1053.69,197.06 1060.56,182.79 1067.47,167.94C1068.52,182.79 1069.77,197.06 1071.16,211.83L1071.28,212.89ZM1117.24,259.24L1151.36,259.24L1158.79,221.01L1174.05,221.01L1184.91,259.24L1220.43,259.24L1206.90,213.63C1220.17,206.58 1229.18,194.85 1232.13,179.67C1237.21,153.50 1222.12,137.01 1192.92,137.01L1141.00,137.01ZM1163.93,194.60L1169.73,164.74L1184.99,164.74C1195.24,164.74 1200.56,170.73 1198.82,179.67C1197.08,188.61 1189.44,194.60 1179.19,194.60ZM1276.49,261.21C1309.63,261.21 1331.42,246.61 1336.39,221.01C1340.19,201.49 1330.40,190.66 1303.35,185.49L1293.86,183.69C1281.59,181.39 1276.70,178.28 1277.83,172.45C1279.03,166.30 1286.60,161.95 1296.19,161.95C1306.37,161.95 1312.15,167.20 1311.32,175.73L1342.65,175.73C1346.81,150.14 1331.28,135.04 1300.77,135.04C1271.07,135.04 1247.73,150.88 1243.22,174.09C1239.70,192.22 1250.05,204.77 1272.80,209.28L1284.50,211.58C1297.77,214.20 1303.33,217.65 1302.18,223.56C1300.94,229.95 1292.88,234.30 1282.13,234.30C1269.74,234.30 1263.08,228.48 1264.52,218.55L1232.28,218.55C1226.94,246.03 1242.61,261.21 1276.49,261.21Z" fill="#B8235E"/>
+<path d="M344.26,257.70L378.39,257.70L385.56,220.79L403.36,220.79C432.57,220.79 454.06,204.30 459.15,178.13C464.24,151.96 449.15,135.47 419.95,135.47L368.02,135.47ZM391.02,192.73L396.69,163.53L411.95,163.53C422.20,163.53 427.58,169.19 425.85,178.13C424.11,187.07 416.53,192.73 406.27,192.73ZM443.20,257.70L480.52,257.70L490.41,237.60L531.27,237.60L533.18,257.70L571.57,257.70L553.91,135.47L507.97,135.47ZM503.39,211.35L503.93,210.29C511.23,195.52 518.10,181.25 525.01,166.40C526.06,181.25 527.31,195.52 528.70,210.29L528.82,211.35ZM630.50,259.67C661.76,259.67 687.52,240.64 696.58,211.76L662.21,211.76C657.84,223.25 648.63,230.14 636.90,230.14C620.25,230.14 613.67,218.00 617.81,196.67C621.97,175.26 633.37,163.04 649.94,163.04C661.67,163.04 668.28,170.01 668.08,181.57L702.45,181.57C704.70,152.70 686.28,133.50 655.03,133.50C621.64,133.50 591.30,155.82 583.36,196.67C575.48,237.19 597.12,259.67 630.50,259.67ZM693.97,257.70L728.10,257.70L733.61,229.32L752.00,211.11L770.83,257.70L809.88,257.70L778.48,187.97L831.34,135.47L791.89,135.47L761.50,166.89C754.92,173.70 748.37,180.43 741.79,187.24L751.85,135.47L717.73,135.47Z" fill="#7FB80F"/>
+<path d="M845.64,257.70L883.13,257.70L907.97,201.26C909.86,197.00 911.85,191.83 914.41,185.43C914.48,191.83 914.46,197.00 914.69,201.26L917.59,257.70L955.07,257.70L1011.23,135.47L974.16,135.47L955.10,182.89C950.81,193.55 946.77,204.22 942.81,214.88C942.75,204.22 942.69,193.55 942.30,182.89L940.69,135.47L907.55,135.47L887.50,182.89C882.95,193.63 878.65,204.38 874.51,215.13C874.63,204.38 874.75,193.63 874.62,182.89L874.08,135.47L837.00,135.47ZM984.12,257.70L1021.44,257.70L1031.34,237.60L1072.19,237.60L1074.10,257.70L1112.50,257.70L1094.83,135.47L1048.89,135.47ZM1044.31,211.35L1044.85,210.29C1052.15,195.52 1059.02,181.25 1065.93,166.40C1066.98,181.25 1068.23,195.52 1069.62,210.29L1069.74,211.35ZM1115.70,257.70L1149.82,257.70L1157.25,219.47L1172.51,219.47L1183.37,257.70L1218.89,257.70L1205.36,212.09C1218.63,205.04 1227.64,193.31 1230.59,178.13C1235.67,151.96 1220.58,135.47 1191.38,135.47L1139.46,135.47ZM1162.39,193.06L1168.19,163.20L1183.45,163.20C1193.70,163.20 1199.02,169.19 1197.28,178.13C1195.54,187.07 1187.90,193.06 1177.65,193.06ZM1274.95,259.67C1308.09,259.67 1329.88,245.07 1334.85,219.47C1338.65,199.95 1328.86,189.12 1301.81,183.95L1292.32,182.15C1280.05,179.85 1275.16,176.74 1276.29,170.91C1277.49,164.76 1285.06,160.41 1294.65,160.41C1304.83,160.41 1310.61,165.66 1309.78,174.19L1341.11,174.19C1345.27,148.60 1329.74,133.50 1299.23,133.50C1269.53,133.50 1246.19,149.34 1241.68,172.55C1238.16,190.68 1248.51,203.23 1271.26,207.74L1282.96,210.04C1296.23,212.66 1301.79,216.11 1300.64,222.02C1299.40,228.41 1291.34,232.76 1280.59,232.76C1268.20,232.76 1261.54,226.94 1262.98,217.01L1230.74,217.01C1225.40,244.49 1241.07,259.67 1274.95,259.67Z" fill="#B8235E"/>
+<path d="M342.72,256.16L376.85,256.16L384.02,219.25L401.82,219.25C431.03,219.25 452.52,202.76 457.61,176.59C462.70,150.42 447.61,133.93 418.41,133.93L366.48,133.93ZM389.48,191.19L395.15,161.99L410.41,161.99C420.66,161.99 426.04,167.65 424.31,176.59C422.57,185.53 414.99,191.19 404.73,191.19ZM441.66,256.16L478.98,256.16L488.87,236.06L529.73,236.06L531.64,256.16L570.03,256.16L552.37,133.93L506.43,133.93ZM501.85,209.81L502.39,208.75C509.69,193.98 516.56,179.71 523.47,164.86C524.52,179.71 525.77,193.98 527.16,208.75L527.28,209.81ZM628.96,258.13C660.22,258.13 685.98,239.10 695.04,210.22L660.67,210.22C656.30,221.71 647.09,228.60 635.36,228.60C618.71,228.60 612.13,216.46 616.27,195.13C620.43,173.72 631.83,161.50 648.40,161.50C660.13,161.50 666.74,168.47 666.54,180.03L700.91,180.03C703.16,151.16 684.74,131.96 653.49,131.96C620.10,131.96 589.76,154.28 581.82,195.13C573.94,235.65 595.58,258.13 628.96,258.13ZM692.43,256.16L726.56,256.16L732.07,227.78L750.46,209.57L769.29,256.16L808.34,256.16L776.94,186.43L829.80,133.93L790.35,133.93L759.96,165.35C753.38,172.16 746.83,178.89 740.25,185.70L750.31,133.93L716.19,133.93Z" fill="#7FB80F"/>
+<path d="M844.10,256.16L881.59,256.16L906.43,199.72C908.32,195.46 910.31,190.29 912.87,183.89C912.94,190.29 912.92,195.46 913.15,199.72L916.05,256.16L953.53,256.16L1009.69,133.93L972.62,133.93L953.56,181.35C949.27,192.01 945.23,202.68 941.27,213.34C941.21,202.68 941.15,192.01 940.76,181.35L939.15,133.93L906.01,133.93L885.96,181.35C881.41,192.09 877.11,202.84 872.97,213.59C873.09,202.84 873.21,192.09 873.08,181.35L872.54,133.93L835.46,133.93ZM982.58,256.16L1019.90,256.16L1029.80,236.06L1070.65,236.06L1072.56,256.16L1110.96,256.16L1093.29,133.93L1047.35,133.93ZM1042.77,209.81L1043.31,208.75C1050.61,193.98 1057.48,179.71 1064.39,164.86C1065.44,179.71 1066.69,193.98 1068.08,208.75L1068.20,209.81ZM1114.16,256.16L1148.28,256.16L1155.71,217.93L1170.97,217.93L1181.83,256.16L1217.35,256.16L1203.82,210.55C1217.09,203.50 1226.10,191.77 1229.05,176.59C1234.13,150.42 1219.04,133.93 1189.84,133.93L1137.92,133.93ZM1160.85,191.52L1166.65,161.66L1181.91,161.66C1192.16,161.66 1197.48,167.65 1195.74,176.59C1194.00,185.53 1186.36,191.52 1176.11,191.52ZM1273.41,258.13C1306.55,258.13 1328.34,243.53 1333.31,217.93C1337.11,198.41 1327.32,187.58 1300.27,182.41L1290.78,180.61C1278.51,178.31 1273.62,175.20 1274.75,169.37C1275.95,163.22 1283.52,158.87 1293.11,158.87C1303.29,158.87 1309.07,164.12 1308.24,172.65L1339.57,172.65C1343.73,147.06 1328.20,131.96 1297.69,131.96C1267.99,131.96 1244.65,147.80 1240.14,171.01C1236.62,189.14 1246.97,201.69 1269.72,206.20L1281.42,208.50C1294.69,211.12 1300.25,214.57 1299.10,220.48C1297.86,226.87 1289.80,231.22 1279.05,231.22C1266.66,231.22 1260.00,225.40 1261.44,215.47L1229.20,215.47C1223.86,242.95 1239.53,258.13 1273.41,258.13Z" fill="#B8235E"/>
+<path d="M341.18,254.62L375.31,254.62L382.48,217.71L400.28,217.71C429.49,217.71 450.98,201.22 456.07,175.05C461.16,148.88 446.07,132.39 416.87,132.39L364.94,132.39ZM387.94,189.65L393.61,160.45L408.87,160.45C419.12,160.45 424.50,166.11 422.77,175.05C421.03,183.99 413.45,189.65 403.19,189.65ZM440.12,254.62L477.44,254.62L487.33,234.52L528.19,234.52L530.10,254.62L568.49,254.62L550.83,132.39L504.89,132.39ZM500.31,208.27L500.85,207.21C508.15,192.44 515.02,178.17 521.93,163.32C522.98,178.17 524.23,192.44 525.62,207.21L525.74,208.27ZM627.42,256.59C658.68,256.59 684.44,237.56 693.50,208.68L659.13,208.68C654.76,220.17 645.55,227.06 633.82,227.06C617.17,227.06 610.59,214.92 614.73,193.59C618.89,172.18 630.29,159.96 646.86,159.96C658.59,159.96 665.20,166.93 665.00,178.50L699.37,178.50C701.62,149.62 683.20,130.42 651.95,130.42C618.56,130.42 588.22,152.74 580.28,193.59C572.40,234.11 594.04,256.59 627.42,256.59ZM690.89,254.62L725.02,254.62L730.53,226.24L748.92,208.03L767.75,254.62L806.80,254.62L775.40,184.89L828.26,132.39L788.81,132.39L758.42,163.81C751.84,170.62 745.29,177.35 738.71,184.16L748.77,132.39L714.65,132.39Z" fill="#7FB80F"/>
+<path d="M842.56,254.62L880.05,254.62L904.89,198.18C906.78,193.92 908.77,188.75 911.33,182.35C911.40,188.75 911.38,193.92 911.61,198.18L914.51,254.62L951.99,254.62L1008.15,132.39L971.08,132.39L952.02,179.81C947.73,190.47 943.69,201.14 939.73,211.80C939.67,201.14 939.61,190.47 939.22,179.81L937.61,132.39L904.47,132.39L884.42,179.81C879.87,190.55 875.57,201.30 871.43,212.05C871.55,201.30 871.67,190.55 871.54,179.81L871.00,132.39L833.92,132.39ZM981.04,254.62L1018.36,254.62L1028.26,234.52L1069.11,234.52L1071.02,254.62L1109.41,254.62L1091.75,132.39L1045.81,132.39ZM1041.23,208.27L1041.77,207.21C1049.07,192.44 1055.94,178.17 1062.85,163.32C1063.90,178.17 1065.15,192.44 1066.54,207.21L1066.66,208.27ZM1112.62,254.62L1146.74,254.62L1154.17,216.39L1169.43,216.39L1180.29,254.62L1215.81,254.62L1202.28,209.01C1215.55,201.96 1224.56,190.23 1227.51,175.05C1232.59,148.88 1217.50,132.39 1188.30,132.39L1136.38,132.39ZM1159.31,189.98L1165.11,160.12L1180.37,160.12C1190.62,160.12 1195.94,166.11 1194.20,175.05C1192.46,183.99 1184.82,189.98 1174.57,189.98ZM1271.87,256.59C1305.01,256.59 1326.80,241.99 1331.77,216.39C1335.57,196.87 1325.78,186.04 1298.73,180.87L1289.24,179.07C1276.97,176.77 1272.08,173.66 1273.21,167.83C1274.41,161.68 1281.98,157.33 1291.57,157.33C1301.75,157.33 1307.53,162.58 1306.70,171.11L1338.03,171.11C1342.19,145.52 1326.66,130.42 1296.15,130.42C1266.45,130.42 1243.11,146.26 1238.60,169.47C1235.08,187.60 1245.43,200.15 1268.18,204.66L1279.88,206.96C1293.15,209.58 1298.71,213.03 1297.56,218.94C1296.32,225.33 1288.26,229.68 1277.51,229.68C1265.12,229.68 1258.46,223.86 1259.90,213.93L1227.66,213.93C1222.32,241.41 1237.99,256.59 1271.87,256.59Z" fill="#B8235E"/>
+<path d="M339.64,253.08L373.77,253.08L380.94,216.17L398.74,216.17C427.95,216.17 449.44,199.68 454.53,173.51C459.62,147.34 444.53,130.85 415.33,130.85L363.40,130.85ZM386.40,188.11L392.07,158.91L407.33,158.91C417.58,158.91 422.96,164.57 421.23,173.51C419.49,182.45 411.91,188.11 401.65,188.11ZM438.58,253.08L475.90,253.08L485.79,232.98L526.65,232.98L528.56,253.08L566.95,253.08L549.29,130.85L503.35,130.85ZM498.77,206.73L499.31,205.67C506.61,190.90 513.48,176.63 520.39,161.78C521.44,176.63 522.69,190.90 524.08,205.67L524.20,206.73ZM625.88,255.05C657.14,255.05 682.90,236.02 691.96,207.14L657.59,207.14C653.22,218.63 644.01,225.52 632.28,225.52C615.63,225.52 609.05,213.38 613.19,192.05C617.35,170.64 628.75,158.42 645.32,158.42C657.05,158.42 663.66,165.39 663.46,176.96L697.83,176.96C700.08,148.08 681.66,128.88 650.41,128.88C617.02,128.88 586.68,151.20 578.74,192.05C570.86,232.57 592.50,255.05 625.88,255.05ZM689.35,253.08L723.48,253.08L728.99,224.70L747.38,206.49L766.21,253.08L805.26,253.08L773.86,183.35L826.72,130.85L787.27,130.85L756.88,162.27C750.30,169.08 743.75,175.81 737.17,182.62L747.23,130.85L713.11,130.85Z" fill="#7FB80F"/>
+<path d="M841.02,253.08L878.51,253.08L903.35,196.64C905.24,192.38 907.23,187.21 909.79,180.81C909.86,187.21 909.84,192.38 910.07,196.64L912.97,253.08L950.45,253.08L1006.61,130.85L969.54,130.85L950.48,178.27C946.19,188.93 942.15,199.60 938.19,210.26C938.13,199.60 938.07,188.93 937.68,178.27L936.07,130.85L902.93,130.85L882.88,178.27C878.33,189.01 874.03,199.76 869.89,210.51C870.01,199.76 870.13,189.01 870.00,178.27L869.46,130.85L832.38,130.85ZM979.50,253.08L1016.82,253.08L1026.72,232.98L1067.57,232.98L1069.48,253.08L1107.88,253.08L1090.21,130.85L1044.27,130.85ZM1039.69,206.73L1040.23,205.67C1047.53,190.90 1054.40,176.63 1061.31,161.78C1062.36,176.63 1063.61,190.90 1065.00,205.67L1065.12,206.73ZM1111.08,253.08L1145.20,253.08L1152.63,214.85L1167.89,214.85L1178.75,253.08L1214.27,253.08L1200.74,207.47C1214.01,200.42 1223.02,188.69 1225.97,173.51C1231.05,147.34 1215.96,130.85 1186.76,130.85L1134.84,130.85ZM1157.77,188.44L1163.57,158.58L1178.83,158.58C1189.08,158.58 1194.40,164.57 1192.66,173.51C1190.92,182.45 1183.28,188.44 1173.03,188.44ZM1270.33,255.05C1303.47,255.05 1325.26,240.45 1330.23,214.85C1334.03,195.33 1324.24,184.50 1297.19,179.33L1287.70,177.53C1275.43,175.23 1270.54,172.12 1271.67,166.29C1272.87,160.14 1280.44,155.79 1290.03,155.79C1300.21,155.79 1305.99,161.04 1305.16,169.57L1336.49,169.57C1340.65,143.98 1325.12,128.88 1294.61,128.88C1264.91,128.88 1241.57,144.72 1237.06,167.93C1233.54,186.06 1243.89,198.61 1266.64,203.12L1278.34,205.42C1291.61,208.04 1297.17,211.49 1296.02,217.40C1294.78,223.79 1286.72,228.14 1275.97,228.14C1263.58,228.14 1256.92,222.32 1258.36,212.39L1226.12,212.39C1220.78,239.87 1236.45,255.05 1270.33,255.05Z" fill="#B8235E"/>
+<path d="M338.10,251.54L372.23,251.54L379.40,214.63L397.20,214.63C426.41,214.63 447.90,198.14 452.99,171.97C458.08,145.80 442.99,129.31 413.79,129.31L361.86,129.31ZM384.86,186.57L390.53,157.37L405.79,157.37C416.04,157.37 421.42,163.03 419.69,171.97C417.95,180.91 410.37,186.57 400.11,186.57ZM437.04,251.54L474.36,251.54L484.25,231.44L525.11,231.44L527.02,251.54L565.41,251.54L547.75,129.31L501.81,129.31ZM497.23,205.19L497.77,204.13C505.07,189.36 511.94,175.09 518.85,160.24C519.90,175.09 521.15,189.36 522.54,204.13L522.66,205.19ZM624.34,253.51C655.60,253.51 681.36,234.48 690.42,205.60L656.05,205.60C651.68,217.09 642.47,223.98 630.74,223.98C614.09,223.98 607.51,211.84 611.65,190.51C615.81,169.10 627.21,156.88 643.78,156.88C655.51,156.88 662.12,163.85 661.92,175.41L696.29,175.41C698.54,146.54 680.12,127.34 648.87,127.34C615.48,127.34 585.14,149.66 577.20,190.51C569.32,231.03 590.96,253.51 624.34,253.51ZM687.81,251.54L721.94,251.54L727.45,223.16L745.84,204.95L764.67,251.54L803.72,251.54L772.32,181.81L825.18,129.31L785.73,129.31L755.34,160.73C748.76,167.54 742.21,174.27 735.63,181.08L745.69,129.31L711.57,129.31Z" fill="#7FB80F"/>
+<path d="M839.48,251.54L876.97,251.54L901.81,195.10C903.70,190.84 905.69,185.67 908.25,179.27C908.32,185.67 908.30,190.84 908.53,195.10L911.43,251.54L948.91,251.54L1005.07,129.31L968.00,129.31L948.94,176.73C944.65,187.39 940.61,198.06 936.65,208.72C936.59,198.06 936.53,187.39 936.14,176.73L934.53,129.31L901.39,129.31L881.34,176.73C876.79,187.47 872.49,198.22 868.35,208.97C868.47,198.22 868.59,187.47 868.46,176.73L867.92,129.31L830.84,129.31ZM977.96,251.54L1015.28,251.54L1025.18,231.44L1066.03,231.44L1067.94,251.54L1106.34,251.54L1088.67,129.31L1042.73,129.31ZM1038.15,205.19L1038.69,204.13C1045.99,189.36 1052.86,175.09 1059.77,160.24C1060.82,175.09 1062.07,189.36 1063.46,204.13L1063.58,205.19ZM1109.54,251.54L1143.66,251.54L1151.09,213.31L1166.35,213.31L1177.21,251.54L1212.73,251.54L1199.20,205.93C1212.47,198.88 1221.48,187.15 1224.43,171.97C1229.51,145.80 1214.42,129.31 1185.22,129.31L1133.30,129.31ZM1156.23,186.90L1162.03,157.04L1177.29,157.04C1187.54,157.04 1192.86,163.03 1191.12,171.97C1189.38,180.91 1181.74,186.90 1171.49,186.90ZM1268.79,253.51C1301.93,253.51 1323.72,238.91 1328.69,213.31C1332.49,193.79 1322.70,182.96 1295.65,177.79L1286.16,175.99C1273.89,173.69 1269.00,170.58 1270.13,164.75C1271.33,158.60 1278.90,154.25 1288.49,154.25C1298.67,154.25 1304.45,159.50 1303.62,168.03L1334.95,168.03C1339.11,142.44 1323.58,127.34 1293.07,127.34C1263.37,127.34 1240.03,143.18 1235.52,166.39C1232.00,184.52 1242.35,197.07 1265.10,201.58L1276.80,203.88C1290.07,206.50 1295.63,209.95 1294.48,215.86C1293.24,222.25 1285.18,226.60 1274.43,226.60C1262.04,226.60 1255.38,220.78 1256.82,210.85L1224.58,210.85C1219.24,238.33 1234.91,253.51 1268.79,253.51Z" fill="#B8235E"/>
+<path d="M336.56,250.00L370.69,250.00L377.86,213.09L395.66,213.09C424.87,213.09 446.36,196.60 451.45,170.43C456.54,144.26 441.45,127.77 412.25,127.77L360.32,127.77ZM383.32,185.03L388.99,155.83L404.25,155.83C414.50,155.83 419.88,161.49 418.15,170.43C416.41,179.37 408.83,185.03 398.57,185.03ZM435.50,250.00L472.82,250.00L482.71,229.90L523.57,229.90L525.48,250.00L563.87,250.00L546.21,127.77L500.27,127.77ZM495.69,203.65L496.23,202.59C503.53,187.82 510.40,173.55 517.31,158.70C518.36,173.55 519.61,187.82 521.00,202.59L521.12,203.65ZM622.80,251.97C654.06,251.97 679.82,232.94 688.88,204.06L654.51,204.06C650.14,215.55 640.93,222.44 629.20,222.44C612.55,222.44 605.97,210.30 610.11,188.97C614.27,167.56 625.67,155.34 642.24,155.34C653.97,155.34 660.58,162.31 660.38,173.88L694.75,173.88C697.00,145.00 678.58,125.80 647.33,125.80C613.94,125.80 583.60,148.12 575.66,188.97C567.78,229.49 589.42,251.97 622.80,251.97ZM686.27,250.00L720.40,250.00L725.91,221.62L744.30,203.41L763.13,250.00L802.18,250.00L770.78,180.27L823.64,127.77L784.19,127.77L753.80,159.19C747.22,166.00 740.67,172.73 734.09,179.54L744.15,127.77L710.03,127.77Z" fill="#C8FF3E" stroke="#0C0C12" stroke-width="10.1" stroke-linejoin="round" paint-order="stroke"/>
+<path d="M837.94,250.00L875.43,250.00L900.27,193.56C902.16,189.30 904.15,184.13 906.71,177.73C906.78,184.13 906.76,189.30 906.99,193.56L909.89,250.00L947.37,250.00L1003.53,127.77L966.46,127.77L947.40,175.19C943.11,185.85 939.07,196.52 935.11,207.18C935.05,196.52 934.99,185.85 934.60,175.19L932.99,127.77L899.85,127.77L879.80,175.19C875.25,185.93 870.95,196.68 866.81,207.43C866.93,196.68 867.05,185.93 866.92,175.19L866.38,127.77L829.30,127.77ZM976.42,250.00L1013.74,250.00L1023.64,229.90L1064.49,229.90L1066.40,250.00L1104.80,250.00L1087.13,127.77L1041.19,127.77ZM1036.61,203.65L1037.15,202.59C1044.45,187.82 1051.32,173.55 1058.23,158.70C1059.28,173.55 1060.53,187.82 1061.92,202.59L1062.04,203.65ZM1108.00,250.00L1142.12,250.00L1149.55,211.77L1164.81,211.77L1175.67,250.00L1211.19,250.00L1197.66,204.39C1210.93,197.34 1219.94,185.61 1222.89,170.43C1227.97,144.26 1212.88,127.77 1183.68,127.77L1131.76,127.77ZM1154.69,185.36L1160.49,155.50L1175.75,155.50C1186.00,155.50 1191.32,161.49 1189.58,170.43C1187.84,179.37 1180.20,185.36 1169.95,185.36ZM1267.25,251.97C1300.39,251.97 1322.18,237.37 1327.15,211.77C1330.95,192.25 1321.16,181.42 1294.11,176.25L1284.62,174.45C1272.35,172.15 1267.46,169.04 1268.59,163.21C1269.79,157.06 1277.36,152.71 1286.95,152.71C1297.13,152.71 1302.91,157.96 1302.08,166.49L1333.41,166.49C1337.57,140.90 1322.04,125.80 1291.53,125.80C1261.83,125.80 1238.49,141.64 1233.98,164.85C1230.46,182.98 1240.81,195.53 1263.56,200.04L1275.26,202.34C1288.53,204.96 1294.09,208.41 1292.94,214.32C1291.70,220.71 1283.64,225.06 1272.89,225.06C1260.50,225.06 1253.84,219.24 1255.28,209.31L1223.04,209.31C1217.70,236.79 1233.37,251.97 1267.25,251.97Z" fill="#FF4F93" stroke="#0C0C12" stroke-width="10.1" stroke-linejoin="round" paint-order="stroke"/>
+</svg></div>
+    <div class="top-right">
+      <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">Live</span></span>
+      <button class="btn ghost" id="connectBtn" type="button">Connect wallet</button>
+      <button class="btn ghost ca-chip" id="caChip" type="button" hidden title="Copy contract address">CA <span class="mono" id="caText"></span></button>
+      <a class="btn lime" id="buyLink" href="https://pump.fun" target="_blank" rel="noopener">Buy $COIN</a>
+    </div>
+  </header>
+
+  <main id="homeView">
+  <section class="hero">
+    <div class="eyebrow" id="heroEyebrow">Pack duels · real graded cards</div>
+    <h1><span class="l">Rip a pack.</span> Beat theirs. <span class="p">Take both.</span></h1>
+    <p class="lede">Pick a pack, get matched with someone who picked the same one, and rip together. The <b>higher card takes both</b>, straight to your wallet.</p>
+    <div class="cta-row">
+      <button class="duel-cta" id="duelCta" type="button">DUEL</button>
+      <a class="btn ghost" href="#how">How it works</a>
+    </div>
+  </section>
+
+  <section class="fee-section" id="holderCol" aria-labelledby="feeTitle">
+    <div class="section-head">
+      <div class="eyebrow">Free pack opening</div>
+      <h2 id="feeTitle">Fee collector</h2>
+      <p class="sub">Every trade of the coin pays a creator fee into this pot. When it hits the goal, two holders with <b id="minPct">1%</b> or more of supply are drawn for a free pack each, and the higher card takes both.</p>
+    </div>
+    <div class="fee-grid">
+      <div class="panel fee-panel">
+        <h3>Next free opening</h3>
+        <p class="sub" id="packOdds"></p>
+        <div class="fund-row"><span class="fund-num" id="fundNum">–</span><span class="mono" id="fundPct" style="color:var(--muted)"></span></div>
+        <div class="meter" role="progressbar" aria-label="Fee collector" id="meter"><i id="meterFill" style="width:0%"></i></div>
+        <div class="fund-note" id="fundNote"></div>
+      </div>
+      <div class="panel">
+        <h3>In the 1% club</h3>
+        <p class="sub" id="eligSub">Wallets that can be drawn next round.</p>
+        <ul class="list" id="eligList"></ul>
+        <details>
+          <summary id="exSummary">Not eligible</summary>
+          <ul class="list" id="exList"></ul>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <div id="stageHome">
+  <section class="stage" aria-labelledby="stageTitle">
+    <div class="stage-head">
+      <h2 id="stageTitle">Duel <span id="roundNo" class="mono">–</span></h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span class="stage-pack"><span class="pack pack-thumb" data-pack></span><span class="eyebrow" id="packName"></span></span><span class="eyebrow" id="roundTime"></span>
+        <button class="btn ghost" id="soundBtn" type="button" aria-pressed="true">Sound on</button>
+        <button class="btn rip-btn" id="replayBtn" type="button">Rip the packs</button>
+      </div>
+    </div>
+    <div class="arena">
+      <canvas class="fx" id="fx" aria-hidden="true"></canvas>
+      <div class="stamp" id="stamp" aria-hidden="true"></div>
+      <div class="side a" id="sideA">
+        <div class="who"><span class="w" id="wA">–</span><span class="h" id="hA"></span></div>
+        <div class="card" id="cardA"><div class="card-inner">
+          <div class="face front">
+            <div class="slab-top"><span id="gA">–</span><span>Insured</span></div>
+            <div class="art"><canvas id="artA" width="300" height="300"></canvas><img class="slab-img" id="imgA" alt="" hidden><span class="rar" id="rA"></span></div>
+            <div class="card-name" id="nA">–</div>
+            <div class="val" id="vA">$0</div>
+          </div>
+          <div class="face back"><div class="card-back"><span>PACK<br>WARS</span></div></div>
+        </div><div class="rip" aria-hidden="true"><div class="rip-top pack" data-pack></div><div class="rip-body pack" data-pack></div></div></div>
+        <span class="badge" id="bA"></span>
+      </div>
+      <div class="vs" id="vs" aria-hidden="true">VS</div>
+      <div class="side b" id="sideB">
+        <div class="who"><span class="w" id="wB">–</span><span class="h" id="hB"></span></div>
+        <div class="card" id="cardB"><div class="card-inner">
+          <div class="face front">
+            <div class="slab-top"><span id="gB">–</span><span>Insured</span></div>
+            <div class="art"><canvas id="artB" width="300" height="300"></canvas><img class="slab-img" id="imgB" alt="" hidden><span class="rar" id="rB"></span></div>
+            <div class="card-name" id="nB">–</div>
+            <div class="val" id="vB">$0</div>
+          </div>
+          <div class="face back"><div class="card-back"><span>PACK<br>WARS</span></div></div>
+        </div><div class="rip" aria-hidden="true"><div class="rip-top pack" data-pack></div><div class="rip-body pack" data-pack></div></div></div>
+        <span class="badge" id="bB"></span>
+      </div>
+    </div>
+    <div class="verdict">
+      <p id="verdictText">–</p>
+      <span class="pot" id="potText"></span>
+    </div>
+    <div class="proof" aria-label="Fairness proof">
+      <div><div class="k">Snapshot slot</div><div class="v" id="pSlot">–</div></div>
+      <div><div class="k">Blockhash (after snapshot)</div><div class="v" id="pHash">–</div></div>
+      <div><div class="k">Pairing seed</div><div class="v" id="pSeed">–</div></div>
+      <div><div class="k">Entrants</div><div class="v" id="pEnt">–</div></div>
+    </div>
+  </section>
+  </div>
+
+  <section class="panel recent">
+    <h3>Recent duels</h3>
+    <p class="sub">Tap a duel to load it on the stage.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Duel</th><th class="num">Pulls</th><th class="num">Pot</th></tr></thead>
+        <tbody id="rounds"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="how" id="how">
+    <div class="eyebrow">How it works</div>
+    <div class="how-grid">
+      <div>
+        <h3>Duel</h3>
+        <ol class="steps">
+          <li><b>Pick a pack</b><p>Choose any live pack, from $25 Pokémon to $5,000 grails, sports, One Piece and more.</p></li>
+          <li><b>Deposit and wait</b><p>Deposit the pack price in USDC. Wait as long as you like, or cancel for a full refund.</p></li>
+          <li><b>Get matched</b><p>When someone deposits for the same pack, both packs are bought at the same moment.</p></li>
+          <li><b>Rip and win</b><p>Both packs open together. The higher insured value takes both cards, sent to the winner's wallet.</p></li>
+        </ol>
+      </div>
+      <div>
+        <h3>Free holder packs</h3>
+        <ol class="steps">
+          <li><b>Fees fill the pot</b><p>Every trade of the coin pays a creator fee into the fee collector.</p></li>
+          <li><b>Snapshot</b><p>Wallets with 1%+ of supply are in. Bonding curve, pool and dev wallets are out.</p></li>
+          <li><b>Fair draw</b><p>A blockhash produced after the snapshot picks two holders. Anyone can re-run it.</p></li>
+          <li><b>Free rip</b><p>Each gets a free pack. Both open at once, and the higher card takes both.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="proof-section" id="proof">
+    <div class="section-head">
+      <div class="eyebrow">Proof</div>
+      <h2>Check everything yourself</h2>
+    </div>
+    <ul class="proof-points">
+      <li><b>Nobody picks the card</b>Every pull comes from Collector Crypt's on-chain randomness, the same as opening the pack yourself.</li>
+      <li><b>Holder draws are re-runnable</b>Each free duel shows its blockhash seed and entrant list, so anyone can check who should have been drawn.</li>
+      <li><b>Every dollar is public</b>Fees, deposits, refunds, pack purchases and cards sent out are all listed below, read straight from the blockchain.</li>
+    </ul>
+  <section class="panel wallet" id="walletPanel" aria-labelledby="walletTitle">
+    <div class="wallet-head">
+      <div>
+        <h3 id="walletTitle">Bot wallet</h3>
+        <p class="sub">Creator fees and player deposits go here. The bot only spends them on packs, refunds and winners. Every move below is read straight from the blockchain.</p>
+      </div>
+      <div class="addr">
+        <span class="mono" id="wAddr">–</span>
+        <button class="btn ghost sm" id="copyAddr" type="button">Copy</button>
+        <a class="btn ghost sm" id="wScan" href="#" target="_blank" rel="noopener">Solscan ↗</a>
+      </div>
+    </div>
+    <div class="wstats">
+      <div><span class="k">Fees in</span><span class="v" id="tFees">–</span><span class="s" id="tFeesS"></span></div>
+      <div><span class="k">Spent on packs</span><span class="v" id="tPacks">–</span><span class="s" id="tPacksS"></span></div>
+      <div><span class="k">Cards to winners</span><span class="v" id="tCards">–</span><span class="s" id="tCardsS"></span></div>
+      <div><span class="k">In the wallet now</span><span class="v" id="tBal">–</span><span class="s" id="tBalS"></span></div>
+    </div>
+    <div class="check" id="wCheck"></div>
+    <a class="proof-link" id="feeProof" href="#" target="_blank" rel="noopener" hidden>See the locked fee setting on Solscan ↗</a>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>When</th><th>What</th><th class="num">SOL</th><th class="num">USDC</th><th class="num">Proof</th></tr></thead>
+        <tbody id="ledgerRows"></tbody>
+      </table>
+    </div>
+  </section>
+  </section>
+  </main>
+
+  <main id="duelView" hidden>
+    <div class="duel-head">
+      <button class="btn ghost" id="backHome" type="button">← Home</button>
+      <h2 class="duel-title">DUEL</h2>
+    </div>
+  <section class="panel arena-panel" id="arenaPanel" aria-labelledby="arenaTitle">
+    <div class="ap-head">
+      <div>
+        <h3 id="arenaTitle">Pick a pack</h3>
+        <p class="sub">Deposit for a pack and wait. When someone else deposits for the same pack, you're matched, both packs rip at once, and the higher card takes both.</p>
+      </div>
+    </div>
+    <div class="my-seat" id="mySeat" hidden></div>
+    <p class="arena-msg" id="arenaMsg" role="status"></p>
+    <div class="cat-tabs" id="catTabs" role="tablist" aria-label="Pack type"></div>
+    <div class="pack-grid" id="packGrid"></div>
+    <p class="fine">You deposit the pack price in USDC from your own wallet. Wait as long as you like, and cancel any time before you're matched for a full refund. When someone else deposits for the same pack, both packs are bought and opened together, and both cards go to the winner's wallet.</p>
+  </section>
+    <div id="stageDuel"></div>
+  </main>
+
+  <footer>
+    <span>Cards are scored on insured value at the moment of the pull. Exact tie: each keeps their own.</span>
+    <span class="mono" id="mintLine"></span>
+  </footer>
+</div>
+
+<script src="https://unpkg.com/@solana/web3.js@1.98.0/lib/index.iife.min.js"></script>
+<script>
+// Point this at your engine (e.g. "https://duel.yoursite.com"). Empty = demo data.
+const API_URL = window.PULLDUEL_API || ""; // engine address if the site is hosted somewhere else; empty = same server
+
+const DEMO = (() => {
+  const W = ["7xKq9fRmB2nTcY4vLpQ8sDwE3hJgA6uZ1oNkXrVt5bMy","Fh3PzW8qLmN2vC6tRyB9kD4xJs7eUa1GoTnQ5iKpXrZc","9mRtYv2KcLp8NxQ4wB7sHd3FjE6gAuZ1oTnVkXrPq5Mb","CqZ4nW7xLm2Rp9TvYb3KsD8hJf6eGa1uNoXkQrVt5BiP","3vNbX8qLm2Rp7TcY4kWsD9hJf6eGa1uZoQnVtKrPx5Mb","HkT2pR9vLmN4xC7qYb3WsD8eJf6gAu1ZoXnQkVrPt5Bi"];
+  const s = (w) => `${w.slice(0,4)}…${w.slice(-4)}`;
+  const mk = (n, a, b, ca, cb, mins) => {
+    const res = ca[2] === cb[2] ? "tie" : "win";
+    const winner = res === "tie" ? null : (ca[2] > cb[2] ? W[a] : W[b]);
+    return { round: n, at: new Date(Date.now() - mins * 60000).toISOString(), snapshotSlot: 371204000 + n * 911,
+      blockhash: ["8sT4kQ","3nVbL9","FqZ7xW","2mRpYc","Dk8hJf","6eGaUz","PxN1oT","9vKrQm"][n % 8] + "eJ2b7XcW9pLm4RtYq3NvHs8KdF6gZa1Uo",
+      seed: ["c41f9a","7be203","e9d114","05a8cf","b23e77","4f6d90","a17c3b","d8e562"][n % 8] + "2f1e8a90b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4",
+      entrants: W.slice(0, 5),
+      a: { wallet: W[a], pct: [4.12,2.87,1.94,1.41,1.06][a], card: { name: ca[0], rarity: ca[1], insuredValueUsd: ca[2], grade: ca[3] } },
+      b: { wallet: W[b], pct: [4.12,2.87,1.94,1.41,1.06][b], card: { name: cb[0], rarity: cb[1], insuredValueUsd: cb[2], grade: cb[3] } },
+      result: res, winner, potUsd: Math.round((ca[2] + cb[2]) * 100) / 100 };
+  };
+  const rounds = [
+    mk(42, 1, 3, ["2002 Umbreon-Holo 1st Ed", "Epic", 412.5, "PSA 9"], ["2023 Raichu Pal EN", "Uncommon", 61.2, "PSA 10"], 6),
+    mk(41, 0, 4, ["2025 Zacian Japanese", "Common", 36.4, "PSA 10"], ["1999 Venusaur-Holo", "Rare", 126.0, "PSA 6"], 41),
+    mk(40, 2, 1, ["2023 Ivysaur Japanese", "Uncommon", 68.0, "PSA 10"], ["2026 Claydol Japanese", "Common", 35.0, "PSA 10"], 97),
+    mk(39, 3, 0, ["2021 Tyranitar V", "Common", 30.0, "PSA 10"], ["2023 Charmander Mew", "Uncommon", 74.61, "PSA 10"], 160),
+    mk(38, 4, 2, ["1997 Dark Charizard-Holo", "Epic", 683, "PSA 8"], ["2025 Mega Dragonite EX", "Common", 37.0, "PSA 10"], 222),
+    mk(37, 0, 1, ["2023 Haunter Master Ball", "Rare", 147.0, "PSA 10"], ["2001 Dark Gengar-Holo", "Epic", 338.0, "PSA 6"], 300),
+    mk(36, 2, 3, ["2024 Flutter Mane", "Common", 44.03, "PSA 10"], ["2022 Charizard V Full Art", "Epic", 425.0, "PSA 10"], 371),
+  ];
+  const lb = {};
+  for (const r of rounds) for (const sd of [r.a, r.b]) {
+    const x = (lb[sd.wallet] ??= { wins: 0, losses: 0, ties: 0 });
+    if (r.result === "tie") x.ties++; else if (r.winner === sd.wallet) x.wins++; else x.losses++;
+  }
+  rounds.forEach((r) => { r.kind = "holder"; r.key = `h${r.round}`; });
+  return {
+    name: "$COIN", mint: "PASTE…MINT", minHoldingPct: 1, mode: "demo", status: "waiting for fees",
+
+    wallet: {
+      address: "BoTw4LLetXq7nRm2cKpZ9vYh3sDfG6uJ1oNkXrVt5bMy",
+      feeProofUrl: "https://solscan.io",
+      balance: { sol: 0.31, usdc: 4.12 },
+      totals: { feesInSol: 4.86, packsBought: 14, packsUsdc: 700, cardsSent: 14, swappedSol: 4.21, otherOut: [] },
+      recent: [
+        { type: "card-out", time: new Date(Date.now() - 6 * 60000).toISOString(), sol: 0, usdc: 0, sig: "demo1", cards: [{}] },
+        { type: "card-out", time: new Date(Date.now() - 6 * 60000).toISOString(), sol: 0, usdc: 0, sig: "demo2", cards: [{}] },
+        { type: "card-in", time: new Date(Date.now() - 7 * 60000).toISOString(), sol: 0, usdc: 0, sig: "demo3" },
+        { type: "card-in", time: new Date(Date.now() - 7 * 60000).toISOString(), sol: 0, usdc: 0, sig: "demo4" },
+        { type: "pack", time: new Date(Date.now() - 7 * 60000).toISOString(), sol: 0, usdc: -50, sig: "demo5" },
+        { type: "pack", time: new Date(Date.now() - 7 * 60000).toISOString(), sol: 0, usdc: -50, sig: "demo6" },
+        { type: "swap", time: new Date(Date.now() - 8 * 60000).toISOString(), sol: -0.552, usdc: 98.7, sig: "demo7" },
+        { type: "fees-in", time: new Date(Date.now() - 18 * 60000).toISOString(), sol: 0.214, usdc: 0, sig: "demo8" },
+        { type: "fees-in", time: new Date(Date.now() - 28 * 60000).toISOString(), sol: 0.188, usdc: 0, sig: "demo9" },
+      ],
+    },
+
+    arena: {
+      packs: [{"code": "pokemon_25", "name": "Starter Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 25, "waiting": 0, "tiers": {"common": [13, 30, 0.75], "uncommon": [30, 55, 0.2], "rare": [55, 125, 0.04], "epic": [125, 500, 0.01]}}, {"code": "pokemon_50", "name": "Elite Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 50, "waiting": 1, "tiers": {"common": [30, 60, 0.8], "uncommon": [60, 110, 0.15], "rare": [110, 250, 0.04], "epic": [250, 5001, 0.01]}}, {"code": "sealed_80", "name": "Sealed Gacha Pack", "category": "Pokemon", "priceUsd": 80, "waiting": 0, "tiers": {"common": [40, 80, 0.8], "uncommon": [80, 160, 0.15], "rare": [160, 400, 0.04], "epic": [400, 5001, 0.01]}}, {"code": "pokemon_100", "name": "Bronze Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.8], "uncommon": [100, 200, 0.15], "rare": [200, 500, 0.04], "epic": [500, 10001, 0.01]}}, {"code": "pokemon_250", "name": "Legendary Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 250, "waiting": 1, "tiers": {"common": [150, 250, 0.75], "uncommon": [250, 400, 0.2], "rare": [400, 2000, 0.04], "epic": [2000, 50000, 0.01]}}, {"code": "pokemon_500", "name": "Hyper Pokémon Gacha", "category": "Pokemon", "priceUsd": 500, "waiting": 0, "tiers": {"common": [250, 500, 0.75], "uncommon": [500, 1000, 0.2], "rare": [1000, 2500, 0.04], "epic": [2500, 50001, 0.01]}}, {"code": "e10_10", "name": "PSA 10's ONLY 10/10 Day", "category": "Pokemon", "priceUsd": 500, "waiting": 0, "tiers": {"common": [250, 500, 0.75], "uncommon": [500, 1000, 0.2], "rare": [1000, 2500, 0.04], "epic": [2500, 50001, 0.01]}}, {"code": "pokemon_1000", "name": "Grail Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 1000, "waiting": 0, "tiers": {"common": [600, 1000, 0.75], "uncommon": [1000, 1600, 0.2], "rare": [1600, 8000, 0.04], "epic": [8000, 50000, 0.01]}}, {"code": "pokemon_2500", "name": "Mythic Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 2500, "waiting": 0, "tiers": {"common": [1250, 2500, 0.75], "uncommon": [2500, 5000, 0.2], "rare": [5000, 10000, 0.04], "epic": [10000, 150000, 0.01]}}, {"code": "pokemon_5000", "name": "Celestial Pokémon Gacha Pack", "category": "Pokemon", "priceUsd": 5000, "waiting": 0, "tiers": {"common": [2500, 5000, 0.75], "uncommon": [5000, 10000, 0.2], "rare": [10000, 20000, 0.04], "epic": [20000, 280001, 0.01]}}, {"code": "onepiece_50", "name": "One Piece Ocean Blue Pack", "category": "One Piece", "priceUsd": 50, "waiting": 1, "tiers": {"common": [30, 60, 0.8], "uncommon": [60, 110, 0.15], "rare": [110, 250, 0.04], "epic": [250, 5001, 0.01]}}, {"code": "onepiece_250", "name": "One Piece Crew Pack", "category": "One Piece", "priceUsd": 250, "waiting": 0, "tiers": {"common": [150, 250, 0.75], "uncommon": [250, 400, 0.2], "rare": [400, 2000, 0.04], "epic": [2000, 50000, 0.01]}}, {"code": "onepiece_1000", "name": "One Piece Emperor Pack", "category": "One Piece", "priceUsd": 1000, "waiting": 0, "tiers": {"common": [600, 1000, 0.75], "uncommon": [1000, 1600, 0.2], "rare": [1600, 8000, 0.04], "epic": [8000, 50000, 0.01]}}, {"code": "soccer_50", "name": "Soccer $50 Pack", "category": "Sports", "priceUsd": 50, "waiting": 1, "tiers": {"common": [25, 50, 0.75], "uncommon": [50, 100, 0.2], "rare": [100, 250, 0.04], "epic": [250, 5001, 0.01]}}, {"code": "sports_100", "name": "Sports Gacha Pack", "category": "Sports", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 10001, 0.01]}}, {"code": "soccer_100", "name": "Soccer $100 Pack", "category": "Sports", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 10001, 0.01]}}, {"code": "basketball_100", "name": "Basketball 100 Gacha Pack", "category": "Sports", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 5001, 0.01]}}, {"code": "baseball_100", "name": "Baseball 100 Gacha Pack", "category": "Sports", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 5001, 0.01]}}, {"code": "football_100", "name": "Football 100 Gacha Pack", "category": "Sports", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 5001, 0.01]}}, {"code": "soccer_250", "name": "Soccer $250 Pack", "category": "Sports", "priceUsd": 250, "waiting": 0, "tiers": {"common": [125, 250, 0.75], "uncommon": [250, 500, 0.2], "rare": [500, 1250, 0.04], "epic": [1250, 25001, 0.01]}}, {"code": "basketball_250", "name": "Basketball 250 Pack", "category": "Sports", "priceUsd": 250, "waiting": 0, "tiers": {"common": [150, 250, 0.75], "uncommon": [250, 400, 0.2], "rare": [400, 2000, 0.04], "epic": [2000, 50000, 0.01]}}, {"code": "baseball_250", "name": "Baseball 250 Gacha Pack", "category": "Sports", "priceUsd": 250, "waiting": 0, "tiers": {"common": [150, 250, 0.75], "uncommon": [250, 400, 0.2], "rare": [400, 2000, 0.04], "epic": [2000, 50000, 0.01]}}, {"code": "football_250", "name": "Football 250 Pack", "category": "Sports", "priceUsd": 250, "waiting": 0, "tiers": {"common": [150, 250, 0.75], "uncommon": [250, 400, 0.2], "rare": [400, 2000, 0.04], "epic": [2000, 50000, 0.01]}}, {"code": "sports_500", "name": "All-Star Sports Gacha Pack 500", "category": "Sports", "priceUsd": 500, "waiting": 0, "tiers": {"common": [250, 500, 0.75], "uncommon": [500, 1000, 0.2], "rare": [1000, 2500, 0.04], "epic": [2500, 50001, 0.01]}}, {"code": "ewatch_250", "name": "WATCH 250", "category": "Watch", "priceUsd": 250, "waiting": 0, "tiers": {"common": [125, 250, 0.75], "uncommon": [250, 500, 0.2], "rare": [500, 1250, 0.04], "epic": [1250, 25001, 0.01]}}, {"code": "ewatch_500", "name": "WATCH 500", "category": "Watch", "priceUsd": 500, "waiting": 0, "tiers": {"common": [250, 500, 0.75], "uncommon": [500, 1000, 0.2], "rare": [1000, 2500, 0.04], "epic": [2500, 50001, 0.01]}}, {"code": "dragonball_50", "name": "Dragonball 50", "category": "Others", "priceUsd": 50, "waiting": 0, "tiers": {"common": [25, 50, 0.75], "uncommon": [50, 100, 0.2], "rare": [100, 250, 0.04], "epic": [250, 5001, 0.01]}}, {"code": "riftbound_50", "name": "Riftbound 50", "category": "Others", "priceUsd": 50, "waiting": 0, "tiers": {"common": [25, 50, 0.75], "uncommon": [50, 100, 0.2], "rare": [100, 250, 0.04], "epic": [250, 5001, 0.01]}}, {"code": "anime_75", "name": "Anime Pop Culture Gacha", "category": "Others", "priceUsd": 75, "waiting": 0, "tiers": {"common": [40, 80, 0.8], "uncommon": [80, 150, 0.15], "rare": [150, 375, 0.04], "epic": [375, 7001, 0.01]}}, {"code": "dragonball_100", "name": "Dragonball 100", "category": "Others", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 10001, 0.01]}}, {"code": "riftbound_100", "name": "Riftbound 100", "category": "Others", "priceUsd": 100, "waiting": 0, "tiers": {"common": [50, 100, 0.75], "uncommon": [100, 200, 0.2], "rare": [200, 500, 0.04], "epic": [500, 10001, 0.01]}}, {"code": "dragonball_250", "name": "Dragonball 250", "category": "Others", "priceUsd": 250, "waiting": 0, "tiers": {"common": [125, 250, 0.75], "uncommon": [250, 500, 0.2], "rare": [500, 1250, 0.04], "epic": [1250, 25001, 0.01]}}, {"code": "riftbound_250", "name": "Riftbound 250", "category": "Others", "priceUsd": 250, "waiting": 0, "tiers": {"common": [125, 250, 0.75], "uncommon": [250, 500, 0.2], "rare": [500, 1250, 0.04], "epic": [1250, 25001, 0.01]}}],
+    },
+    pack: { code: "pokemon_50", name: "Elite Pokémon Gacha Pack", priceUsd: 50, buybackPct: 85 },
+    round: 42, fund: { balanceSol: 0.38, needSol: 0.55 },
+    lastSnapshot: {
+      eligible: W.slice(0, 5).map((w, i) => ({ wallet: w, pct: [4.12,2.87,1.94,1.41,1.06][i] })),
+      excluded: [
+        { wallet: "6EF8…F6Pc", pct: 38.4, reason: "bonding curve" },
+        { wallet: W[5], pct: 3.5, reason: "dev wallet" },
+        { wallet: "Bq7n…2xLm", pct: 0.97, reason: "under 1%" },
+      ],
+    },
+    rounds, leaderboard: lb, demo: true, short: s,
+  };
+})();
+
+const $ = (id) => document.getElementById(id);
+const short = (w) => (w && w.length > 12 ? `${w.slice(0, 4)}…${w.slice(-4)}` : w ?? "–");
+const usd = (n) => "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+const ago = (iso) => {
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+};
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let state = DEMO;
+let current = null;
+
+// Card picture: the real slab photo when the card has one (live and test-mode
+// pulls do), otherwise a drawn graded slab showing the card's details.
+function showCardImage(k, card) {
+  const img = $("img" + k), cv = $("art" + k);
+  drawSlab(cv, card, k === "A" ? "#C8FF3E" : "#FF4F93");
+  if (card.image) {
+    img.alt = card.name;
+    img.onload = () => { img.hidden = false; cv.hidden = true; };
+    img.onerror = () => { img.hidden = true; cv.hidden = false; };
+    img.hidden = true; cv.hidden = false;
+    img.src = card.image;
+  } else {
+    img.hidden = true; img.removeAttribute("src"); cv.hidden = false;
+  }
+}
+
+function drawSlab(canvas, card, accent) {
+  const ctx = canvas.getContext("2d"), W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+  const sw = W * 0.62, sh = H * 0.94, sx = (W - sw) / 2, sy = (H - sh) / 2;
+  // clear plastic case
+  rr(sx, sy, sw, sh, 12); ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2; ctx.stroke();
+  // grading label
+  const lh = sh * 0.18;
+  rr(sx + 8, sy + 8, sw - 16, lh, 6); ctx.fillStyle = "#F2F1F7"; ctx.fill();
+  ctx.fillStyle = "#0C0C12"; ctx.textBaseline = "top";
+  const grade = card.grade || "Graded";
+  const num = (grade.match(/\d+(\.\d+)?/) || [""])[0];
+  const company = grade.replace(num, "").trim() || "GRADED";
+  ctx.font = "800 13px Archivo, Arial, sans-serif"; ctx.fillText(company.toUpperCase(), sx + 16, sy + 15);
+  ctx.font = "500 10px Figtree, Arial, sans-serif";
+  const name = (card.name || "").slice(0, 26);
+  ctx.fillText(name, sx + 16, sy + 15 + 17);
+  ctx.font = "900 26px Archivo, Arial, sans-serif"; ctx.textAlign = "right";
+  ctx.fillText(num || "–", sx + sw - 16, sy + 13); ctx.textAlign = "left";
+  // card window
+  const cx = sx + 14, cy = sy + lh + 18, cw = sw - 28, ch = sh - lh - 30;
+  const g = ctx.createLinearGradient(cx, cy, cx + cw, cy + ch);
+  g.addColorStop(0, accent); g.addColorStop(0.5, "#ffffff"); g.addColorStop(1, accent);
+  rr(cx, cy, cw, ch, 6); ctx.fillStyle = "#1a1a24"; ctx.fill();
+  ctx.save(); rr(cx + 6, cy + 6, cw - 12, ch - 12, 4); ctx.clip();
+  ctx.globalAlpha = 0.28; ctx.fillStyle = g; ctx.fillRect(cx, cy, cw, ch); ctx.globalAlpha = 1;
+  ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(cx + 12, cy + 14, cw - 24, ch * 0.45);
+  ctx.restore();
+}
+
+function setSide(k, side, r) {
+  const won = r.result === "win" && r.winner === side.wallet;
+  $("w" + k).textContent = short(side.wallet);
+  $("w" + k).title = side.wallet;
+  const rec = state.leaderboard?.[side.wallet];
+  $("h" + k).textContent = `${side.pct}% of supply` + (rec ? ` · ${rec.wins}W ${rec.losses}L` : "");
+  $("g" + k).textContent = side.card.grade ?? "Graded";
+  $("r" + k).textContent = side.card.rarity ?? "";
+  $("r" + k).dataset.r = side.card.rarity ?? "";
+  $("n" + k).textContent = side.card.name;
+  $("v" + k).innerHTML = `${usd(side.card.insuredValueUsd)}`;
+  showCardImage(k, side.card);
+  $("side" + k).classList.toggle("win", won);
+  const b = $("b" + k);
+  b.className = "badge " + (r.result === "tie" ? "lose" : won ? "win" : "lose");
+  b.textContent = r.result === "tie" ? "Tie · keeps card" : won ? "Takes both" : "Out";
+}
+
+function showRound(r, animate) {
+  setStagePack(r.pack || state.pack);
+  current = r;
+  $("roundNo").textContent = r.round;
+  $("roundTime").textContent = ago(r.at);
+  setSide("A", r.a, r);
+  setSide("B", r.b, r);
+  const winSide = r.winner === r.a.wallet ? r.a : r.b;
+  const loseSide = winSide === r.a ? r.b : r.a;
+  $("verdictText").innerHTML = r.result === "tie"
+    ? `Dead even at ${usd(r.a.card.insuredValueUsd)}. Both holders keep their own card.`
+    : `<b class="mono">${short(r.winner)}</b> pulled ${winSide.card.name} and takes ${loseSide.card.name} too.`;
+  for (const [k, sd] of [["A", r.a], ["B", r.b]]) $("side" + k).classList.toggle("lose-dim", r.result === "win" && r.winner !== sd.wallet);
+  const paid = (r.payouts || []).filter((x) => x.signature && !/^(mock|dry|already)/.test(x.signature));
+  if (paid.length) {
+    $("verdictText").innerHTML += ` <span class="sent">Cards sent: ${paid.map((x, i) => `<a href="https://solscan.io/tx/${x.signature}" target="_blank" rel="noopener">card ${i + 1} ↗</a>`).join(" ")}</span>`;
+  }
+  $("potText").textContent = r.result === "tie" ? "" : `Pot ${usd(r.potUsd)}`;
+  document.querySelector(".proof").hidden = r.kind === "deposit";
+  $("pSlot").textContent = r.snapshotSlot?.toLocaleString("en-US") ?? "–";
+  $("pHash").textContent = r.blockhash ? `${r.blockhash.slice(0, 22)}…` : "–";
+  $("pSeed").textContent = r.seed ? `${r.seed.slice(0, 22)}…` : "–";
+  $("pEnt").textContent = r.entrants ? `${r.entrants.length} wallets` : "–";
+  document.querySelectorAll("tr.row").forEach((tr) => tr.classList.toggle("sel", tr.dataset.key === r.key));
+  if (animate) reveal(r);
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- particles ----------
+const fx = $("fx"), fctx = fx.getContext("2d");
+let parts = [], fxRun = false;
+function sizeFx() {
+  const r = fx.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  fx.width = r.width * dpr; fx.height = r.height * dpr; fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function pointOf(el, fy = 0.2) {
+  const a = fx.getBoundingClientRect(), b = el.getBoundingClientRect();
+  return [b.left - a.left + b.width / 2, b.top - a.top + b.height * fy];
+}
+function burst(x, y, colors, n, speed = 6, kind = "spark") {
+  for (let i = 0; i < n; i++) {
+    const ang = Math.random() * Math.PI * 2, sp = speed * (0.3 + Math.random());
+    const conf = kind === "confetti";
+    parts.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - (conf ? 4 : 1), g: conf ? 0.18 : 0.12,
+      life: 1, decay: conf ? 0.007 + Math.random() * 0.008 : 0.025 + Math.random() * 0.03,
+      size: conf ? 4 + Math.random() * 6 : 1.5 + Math.random() * 2.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+      c: colors[i % colors.length], conf });
+  }
+  if (!fxRun) { fxRun = true; requestAnimationFrame(tickFx); }
+}
+function tickFx() {
+  const r = fx.getBoundingClientRect();
+  fctx.clearRect(0, 0, r.width, r.height);
+  parts = parts.filter((p) => p.life > 0);
+  for (const p of parts) {
+    p.vy += p.g; p.vx *= 0.985; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.life -= p.decay;
+    fctx.globalAlpha = Math.max(0, p.life); fctx.fillStyle = p.c;
+    if (p.conf) { fctx.save(); fctx.translate(p.x, p.y); fctx.rotate(p.rot); fctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2); fctx.restore(); }
+    else { fctx.beginPath(); fctx.arc(p.x, p.y, p.size, 0, 7); fctx.fill(); }
+  }
+  fctx.globalAlpha = 1;
+  if (parts.length) requestAnimationFrame(tickFx); else fxRun = false;
+}
+
+// ---------- sound (synthesised, starts only after a click) ----------
+let soundOn = true;
+try { soundOn = localStorage.getItem("pd-sound") !== "off"; } catch (e) {}
+let ac = null;
+function audio() {
+  if (!soundOn) return null;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === "suspended") ac.resume(); return ac; }
+  catch (e) { return null; }
+}
+function tone(freq, dur, type = "square", vol = 0.06, slideTo) {
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur);
+}
+function noise(dur, vol = 0.25, hp = 1500) {
+  const a = audio(); if (!a) return;
+  const b = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = b; f.type = "highpass"; f.frequency.value = hp; g.gain.value = vol;
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+function syncSoundBtn() {
+  const b = $("soundBtn"); b.textContent = soundOn ? "Sound on" : "Sound off"; b.setAttribute("aria-pressed", String(soundOn));
+}
+
+function countUp(el, to, ms, onTick, prefix = "") {
+  return new Promise((done) => {
+    if (reduce) { el.textContent = prefix + usd(to); return done(); }
+    const t0 = performance.now(); let last = 0;
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 4);
+      el.textContent = prefix + usd(Math.round(to * e * 100) / 100);
+      if (onTick && p < 1 && t - last > 55 + p * 160) { last = t; onTick(e); }
+      if (p < 1) requestAnimationFrame(step); else done();
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+function quake() {
+  const s = document.querySelector(".stage");
+  s.classList.remove("quake"); void s.offsetWidth; s.classList.add("quake");
+  setTimeout(() => s.classList.remove("quake"), 460);
+}
+
+let revealing = false;
+async function reveal(r) {
+  if (revealing) return;
+  revealing = true;
+  const btn = $("replayBtn"); btn.disabled = true;
+  const A = $("cardA"), B = $("cardB"), stage = document.querySelector(".stage"), vs = $("vs"), stamp = $("stamp");
+  const sides = [["A", A, r.a], ["B", B, r.b]];
+  const done = () => { stage.classList.remove("charging"); revealing = false; btn.disabled = false; };
+
+  if (reduce) { showRound(r, false); A.className = B.className = "card"; done(); return; }
+
+  // Reset: fill the cards with this round's pulls, hidden inside sealed packs.
+  setStagePack(r.pack || state.pack);
+  stamp.className = "stamp"; stamp.textContent = "";
+  for (const [k, c, sd] of sides) {
+    setSide(k, sd, r);
+    $("side" + k).classList.remove("win", "lose-dim");
+    c.className = "card sealed";
+    $("b" + k).style.visibility = "hidden";
+    $("v" + k).textContent = "$0";
+  }
+  $("roundNo").textContent = r.round; $("roundTime").textContent = ago(r.at);
+  $("verdictText").style.visibility = "hidden"; $("potText").style.visibility = "hidden";
+  document.querySelectorAll("tr.row").forEach((tr) => tr.classList.toggle("sel", tr.dataset.key === r.key));
+  sizeFx();
+  stage.classList.add("charging");
+  await sleep(250);
+
+  // 3, 2, 1 with the packs shaking harder each beat
+  for (const [i, n] of ["3", "2", "1"].entries()) {
+    vs.textContent = n; vs.classList.remove("count"); void vs.offsetWidth; vs.classList.add("count");
+    for (const [, c] of sides) { c.style.setProperty("--s", (2 + i * 2.5) + "px"); c.classList.add("shake"); }
+    tone(220 + i * 110, 0.16, "square", 0.05);
+    await sleep(430);
+  }
+
+  // RIP: tops tear off, sparks fly, cards slide out
+  vs.textContent = "RIP!"; vs.classList.add("ripping");
+  noise(0.4, 0.3); tone(110, 0.35, "sawtooth", 0.07, 40);
+  for (const [k, c] of sides) {
+    c.classList.remove("shake", "sealed"); c.classList.add("ripped", "facedown");
+    const [x, y] = pointOf(c, 0.19);
+    burst(x, y, ["#fff", "#FFC93E", k === "A" ? "#C8FF3E" : "#FF4F93"], 45, 7);
+  }
+  quake();
+  await sleep(1300);
+
+  // Values count up one at a time. Bigger hits get bigger reactions.
+  for (const [k, c, sd] of sides) {
+    const v = sd.card.insuredValueUsd, rar = sd.card.rarity || "Common";
+    // slow turn from face down to face up
+    tone(196, 0.5, "sine", 0.04, 392);
+    c.classList.remove("facedown"); c.classList.add("flipping");
+    await sleep(2100);
+    c.classList.remove("flipping");
+    await sleep(350);
+    // value climbs, easing off near the end; bigger pulls take a little longer
+    const ms = rar === "Epic" ? 4200 : rar === "Rare" ? 3500 : rar === "Uncommon" ? 2900 : 2400;
+    c.classList.add("counting");
+    await countUp($("v" + k), v, ms, (e) => tone(240 + e * 600, 0.05, "triangle", 0.025));
+    c.classList.remove("counting");
+    c.classList.add("pop", "glow-" + rar);
+    const [x, y] = pointOf(c, 0.5);
+    if (rar === "Epic") {
+      burst(x, y, ["#FFC93E", "#fff", "#FF4F93", "#C8FF3E"], 150, 11, "confetti"); quake();
+      tone(523, 0.15, "square", 0.07); setTimeout(() => tone(784, 0.4, "square", 0.07), 130);
+    } else if (rar === "Rare") {
+      burst(x, y, ["#7FD4FF", "#fff"], 70, 8); tone(440, 0.22, "triangle", 0.07, 700);
+    } else if (rar === "Uncommon") {
+      burst(x, y, ["#C8FF3E", "#fff"], 35, 6); tone(392, 0.15, "triangle", 0.06);
+    } else {
+      burst(x, y, ["#fff"], 16, 4); tone(330, 0.1, "triangle", 0.05);
+    }
+    await sleep(k === "A" ? 1100 : 700);
+  }
+
+  // Verdict
+  vs.classList.remove("ripping"); vs.textContent = "VS";
+  await sleep(250);
+  showRound(r, false);
+  for (const [k, c, sd] of sides) c.className = "card" + (sd.card.rarity === "Epic" ? " glow-Epic" : "");
+  if (r.result === "win") {
+    const wk = r.winner === r.a.wallet ? "A" : "B";
+    stamp.textContent = "Takes both"; stamp.className = "stamp show " + (wk === "A" ? "left" : "right");
+    const [x, y] = pointOf($("card" + wk), 0.3);
+    burst(x, y, ["#FFC93E", "#fff", "#C8FF3E", "#FF4F93"], 200, 12, "confetti"); quake();
+    tone(392, 0.12, "square", 0.07); setTimeout(() => tone(523, 0.12, "square", 0.07), 120); setTimeout(() => tone(784, 0.5, "square", 0.08), 240);
+    $("potText").style.visibility = "";
+    ["A", "B"].forEach((k) => ($("b" + k).style.visibility = ""));
+    $("verdictText").style.visibility = "";
+    await countUp($("potText"), r.potUsd, 900, null, "Pot ");
+  } else {
+    stamp.textContent = "Tie"; stamp.className = "stamp show center"; tone(260, 0.4, "triangle", 0.06);
+    ["A", "B"].forEach((k) => ($("b" + k).style.visibility = ""));
+    $("verdictText").style.visibility = ""; $("potText").style.visibility = "";
+  }
+  done();
+}
+
+$("soundBtn").addEventListener("click", () => {
+  soundOn = !soundOn;
+  try { localStorage.setItem("pd-sound", soundOn ? "on" : "off"); } catch (e) {}
+  syncSoundBtn();
+  if (soundOn) tone(523, 0.1, "triangle", 0.05);
+});
+syncSoundBtn();
+
+// Pack picture. Uses packs/<code>.png when you've added official art with permission,
+// otherwise draws an original pack coloured by price.
+const PACK_COLORS = [[25, "#7FD4FF"], [50, "#C8FF3E"], [100, "#FF9F43"], [250, "#FF4F93"], [500, "#B48CFF"], [1000, "#FFC93E"], [Infinity, "#F2F1F7"]];
+function packColor(price) { return PACK_COLORS.find(([max]) => (price ?? 50) <= max)[1]; }
+function shortPackName(p) {
+  return (p.name || p.code || "Pack").replace(/Pokémon|Gacha|Pack/gi, "").replace(/\s+/g, " ").trim() || p.code;
+}
+const artCache = {};
+function setStagePack(p) {
+  if (!p) return;
+  drawPacks(p);
+  $("packName").textContent = `${p.name} · $${(p.priceUsd ?? 0).toLocaleString("en-US")} a pack`;
+}
+function drawPacks(p) {
+  if (!p) return;
+  document.querySelectorAll("[data-pack]").forEach((el) => {
+    el.style.setProperty("--pk", packColor(p.priceUsd));
+    el.innerHTML = `<div class="pack-foil"></div><div class="pack-label"><span class="pk-brand">PackWars</span><span class="pk-name">${shortPackName(p)}</span><span class="pk-price">$${p.priceUsd ?? "?"}</span></div>`;
+  });
+  // Real pack picture if there is one: Collector Crypt's official art (when the
+  // engine's "officialPackArt" setting is on), or your own file in packs/<code>.png.
+  const apply = (src) => document.querySelectorAll("[data-pack]").forEach((el) => {
+    el.innerHTML = `<img src="${src}" alt="${p.name}">`;
+  });
+  const known = artCache[p.code];
+  if (typeof known === "string") return apply(known);
+  if (known === false) return;
+  const sources = [p.imageUrl, `packs/${p.code}.png`].filter(Boolean);
+  const tryNext = () => {
+    const src = sources.shift();
+    if (!src) { artCache[p.code] = false; return; }
+    const img = new Image();
+    img.onload = () => { artCache[p.code] = src; apply(src); };
+    img.onerror = tryNext;
+    img.src = src;
+  };
+  tryNext();
+}
+
+
+const LEDGER_LABEL = { "fees-in": "Fees in", "player-in": "Player deposit", refund: "Refund", deposit: "Deposit", swap: "Swapped to USDC", pack: "Pack bought", "card-in": "Card pulled", "card-out": "Card to winner", network: "Network fee", "other-out": "Sent elsewhere" };
+const fmtSol = (n) => (n == null ? "–" : `${n > 0 ? "+" : ""}${Number(n).toFixed(Math.abs(n) < 0.01 && n !== 0 ? 4 : 3)}`);
+const fmtUsdc = (n) => (n == null ? "–" : `${n > 0 ? "+" : ""}${Number(n).toFixed(2)}`);
+function renderWallet(w) {
+  const panel = $("walletPanel");
+  if (!w) { panel.hidden = true; return; }
+  panel.hidden = false;
+  $("wAddr").textContent = w.address;
+  $("wScan").href = `https://solscan.io/account/${w.address}`;
+  const t = w.totals || {};
+  $("tFees").textContent = `${(t.feesInSol ?? 0).toFixed(2)} SOL`;
+  $("tFeesS").textContent = "claimed from pump.fun";
+  $("tPacks").textContent = `$${Math.round(t.packsUsdc ?? 0).toLocaleString("en-US")}`;
+  $("tPacksS").textContent = `${t.packsBought ?? 0} packs`;
+  $("tCards").textContent = String(t.cardsSent ?? 0);
+  $("tCardsS").textContent = "sent to duel winners";
+  const b = w.balance || {};
+  $("tBal").textContent = b.sol == null ? "–" : `${b.sol.toFixed(2)} SOL`;
+  const held = state.arena?.escrowUsd;
+  $("tBalS").textContent = (b.usdc == null ? "" : `+ $${b.usdc.toFixed(2)} USDC`) + (held ? ` · $${held} held for waiting players` : "");
+  const out = t.otherOut || [];
+  const check = $("wCheck");
+  if (!out.length) {
+    check.className = "check good";
+    check.innerHTML = `<span class="ico" aria-hidden="true">✓</span><span>Nothing has left this wallet except pack purchases, refunds to players who cancelled, and cards sent to duel winners.</span>`;
+  } else {
+    check.className = "check bad";
+    check.innerHTML = `<span class="ico" aria-hidden="true">!</span><span>${out.length} move${out.length === 1 ? "" : "s"} left this wallet outside a duel: ${out.slice(0, 5).map((e) => `<a href="https://solscan.io/tx/${e.sig}" target="_blank" rel="noopener">${e.note || "view"} ↗</a>`).join(", ")}</span>`;
+  }
+  const proof = $("feeProof");
+  if (w.feeProofUrl) { proof.hidden = false; proof.href = w.feeProofUrl; } else proof.hidden = true;
+  $("ledgerRows").innerHTML = (w.recent || []).map((e) => {
+    const link = /^demo/.test(e.sig) ? `<span style="color:var(--muted)">demo</span>` : `<a href="https://solscan.io/tx/${e.sig}" target="_blank" rel="noopener" style="color:var(--gold)">tx ↗</a>`;
+    return `<tr class="${e.type === "other-out" ? "flag" : ""}">
+      <td>${e.time ? ago(e.time) : "–"}</td>
+      <td><span class="chip ${e.type}">${LEDGER_LABEL[e.type] || e.type}</span>${e.type === "card-out" && e.cards?.length > 1 ? ` <span style="color:var(--muted)">×${e.cards.length}</span>` : ""}</td>
+      <td class="num ${e.sol > 0 ? "pos" : ""}">${e.sol ? fmtSol(e.sol) : ""}</td>
+      <td class="num ${e.usdc > 0 ? "pos" : ""}">${e.usdc ? fmtUsdc(e.usdc) : ""}</td>
+      <td class="num">${link}</td></tr>`;
+  }).join("") || `<tr><td colspan="5" style="color:var(--muted)">No transactions yet. They appear here as soon as fees arrive.</td></tr>`;
+}
+$("copyAddr").addEventListener("click", async () => {
+  const text = $("wAddr").textContent;
+  try { await navigator.clipboard.writeText(text); $("copyAddr").textContent = "Copied"; }
+  catch (e) { const r = document.createRange(); r.selectNodeContents($("wAddr")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); $("copyAddr").textContent = "Selected"; }
+  setTimeout(() => ($("copyAddr").textContent = "Copy"), 1500);
+});
+
+
+// ---------- deposit duels ----------
+let me = null;
+let tokens = {};
+try { tokens = JSON.parse(localStorage.getItem("pd-tokens") || "{}"); } catch (e) {}
+const saveTokens = () => { try { localStorage.setItem("pd-tokens", JSON.stringify(tokens)); } catch (e) {} };
+const revealed = new Set();
+let mySeatState = null, demoSeat = null;
+
+const walletProvider = () => window.phantom?.solana ?? (window.solana?.isPhantom ? window.solana : null) ?? window.solflare ?? window.backpack ?? null;
+function flash(msg) { $("arenaMsg").textContent = msg || ""; }
+
+async function api(path, body) {
+  const res = await fetch(`${API_URL}${path}`, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : undefined);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+async function connect() {
+  const p = walletProvider();
+  if (!p) {
+    if (state.demo) { me = "DemoYou1111111111111111111111111111111111111"; $("connectBtn").textContent = "Demo wallet"; return; }
+    if (state.mode === "mock") {
+      // Test mode with no wallet installed: use a made-up address (no money moves in test mode).
+      try { me = localStorage.getItem("pd-test-wallet"); } catch (e) {}
+      if (!me) {
+        const A = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+        const bytes = crypto.getRandomValues(new Uint8Array(32)); bytes[0] |= 1;
+        let n = 0n; for (const b of bytes) n = n * 256n + BigInt(b);
+        let out = ""; while (n > 0n) { out = A[Number(n % 58n)] + out; n /= 58n; }
+        me = out; try { localStorage.setItem("pd-test-wallet", me); } catch (e) {}
+      }
+      $("connectBtn").textContent = "Test wallet"; flash(""); pollMe(); return;
+    }
+    flash("No Solana wallet found. Install Phantom (phantom.com), then refresh this page.");
+    return;
+  }
+  try { const r = await p.connect(); me = (r?.publicKey ?? p.publicKey).toString(); }
+  catch (e) { flash("Wallet connection was cancelled."); return; }
+  $("connectBtn").textContent = short(me);
+  flash("");
+  pollMe();
+}
+
+async function signPurchase(b64) {
+  const W = window.solanaWeb3;
+  if (!W) throw new Error("The wallet library didn't load. Refresh the page and try again.");
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const tx = W.VersionedTransaction.deserialize(bytes);
+  const signed = await walletProvider().signTransaction(tx);
+  const out = signed.serialize();
+  let bin = ""; for (const b of out) bin += String.fromCharCode(b);
+  return btoa(bin);
+}
+
+async function join(code) {
+  flash("");
+  if (!me) await connect();
+  if (!me) return;
+  if (state.demo) return demoJoin(code);
+  try {
+    renderMySeat({ status: "preparing", pack: code });
+    const r = await api("/api/join", { wallet: me, pack: code, ageConfirmed: true });
+    tokens[r.seat.id] = r.token; saveTokens();
+    if (r.tx) {
+      renderMySeat({ ...r.seat, status: "signing" });
+      let signed;
+      try { signed = await signPurchase(r.tx); }
+      catch (e) { renderMySeat(null); flash(/reject|cancel|denied/i.test(e.message) ? "Purchase cancelled in your wallet." : e.message); return; }
+      renderMySeat({ ...r.seat, status: "sending" });
+      await api("/api/confirm", { seatId: r.seat.id, token: r.token, signedTransaction: signed });
+    }
+    await pollMe();
+  } catch (e) { renderMySeat(null); flash(e.message); await pollMe(); }
+}
+
+async function leave(seatId) {
+  if (state.demo) { demoSeat = { ...demoSeat, status: "refunded" }; renderMySeat(demoSeat); const d = demoSeat; demoSeat = null; setTimeout(() => { if (mySeatState === d) renderMySeat(null); renderArena(state.arena); }, 4000); return; }
+  try { await api("/api/cancel", { seatId, token: tokens[seatId] }); await pollMe(); }
+  catch (e) { flash(e.message); }
+}
+
+function duelToRound(d, seat) {
+  return { key: `me-${d.id}`, kind: "deposit", round: "yours", at: new Date().toISOString(), pack: d.pack,
+    a: d.a, b: d.b, result: d.result, winner: d.winner, potUsd: d.potUsd, payouts: d.payouts };
+}
+
+function renderMySeat(seat, duel) {
+  mySeatState = seat;
+  const box = $("mySeat");
+  if (!seat || ["expired", "cancelled", "left"].includes(seat.status)) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false; box.className = "my-seat";
+  const packName = (state.arena?.packs || []).find((p) => p.code === seat.pack)?.name || seat.pack;
+  const spin = '<span class="spin" aria-hidden="true"></span>';
+  let html = "";
+  if (seat.status === "preparing") html = `<p>${spin}Getting your ${packName} ready…</p>`;
+  else if (seat.status === "signing" || seat.status === "awaiting-deposit") html = `<p>${spin}Approve the $${seat.priceUsd ?? ""} USDC deposit in your wallet.</p>`;
+  else if (seat.status === "sending" || seat.status === "confirming") html = `<p>${spin}Confirming your deposit…</p>`;
+  else if (seat.status === "paid") {
+    box.classList.add("wait");
+    html = `<p>${spin}Your $${seat.priceUsd} is in. Waiting for someone to join the ${packName}… <span style="color:var(--muted)">No time limit.</span></p>
+      <button class="btn ghost sm" type="button" data-leave="${seat.id}">Cancel and refund</button>`;
+  } else if (seat.status === "matched") {
+    const opp = duel ? (duel.a.wallet === me ? duel.b.wallet : duel.a.wallet) : null;
+    html = `<p>${spin}Matched${opp ? ` with <b class="mono">${short(opp)}</b>` : ""}! Buying and ripping both packs…</p>`;
+  } else if (seat.status === "done" && duel) {
+    const link = (duel.payouts || []).filter((p) => p.signature && !/^mock/.test(p.signature)).map((p, i) => `<a href="https://solscan.io/tx/${p.signature}" target="_blank" rel="noopener">card ${i + 1} ↗</a>`).join(" ");
+    if (duel.result === "tie") html = `<p>Dead even. You keep your card. ${link}</p>`;
+    else if (duel.winner === me) { box.classList.add("win"); html = `<p><b>You won both cards!</b> They're in your wallet. ${link}</p>`; }
+    else html = `<p><b class="mono">${short(duel.winner)}</b> took both cards this time. Pick a pack for a rematch.</p>`;
+  } else if (seat.status === "refunding") {
+    html = `<p>${spin}Sending your $${seat.priceUsd} back…</p>`;
+  } else if (seat.status === "refunded") {
+    const link = seat.refundSig && !/^mock/.test(seat.refundSig) ? ` <a href="https://solscan.io/tx/${seat.refundSig}" target="_blank" rel="noopener">refund ↗</a>` : "";
+    html = `<p>Your $${seat.priceUsd} USDC is back in your wallet${seat.refundReason === "pack machine unavailable" ? " (the pack machine was unavailable)" : ""}.${link}</p>`;
+  } else html = `<p>${seat.status}</p>`;
+  box.innerHTML = html;
+  box.querySelector("[data-leave]")?.addEventListener("click", (e) => leave(e.currentTarget.dataset.leave));
+}
+
+let polling = null;
+async function pollMe() {
+  if (!me || state.demo) return;
+  try {
+    const r = await api(`/api/me?wallet=${encodeURIComponent(me)}`);
+    const seat = r.seats[0];
+    const duel = seat?.duelId ? r.duels.find((d) => d.id === seat.duelId) : null;
+    renderMySeat(seat, duel);
+    if (duel && (duel.stage === "paying" || duel.stage === "done") && !revealed.has(duel.id)) {
+      revealed.add(duel.id);
+      if (view !== "duel") setView("duel");
+      document.querySelector(".stage").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      reveal(duelToRound(duel, seat));
+    }
+  } catch (e) {}
+  clearTimeout(polling);
+  polling = setTimeout(pollMe, 3000);
+}
+
+let activeCat = null;
+function renderArena(a) {
+  const panel = $("arenaPanel");
+  if (!a || !a.packs?.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+  const active = mySeatState && ["preparing", "signing", "sending", "awaiting-deposit", "confirming", "paid", "matched", "refunding"].includes(mySeatState.status) ? mySeatState.pack : null;
+  const CAT_LABEL = { Pokemon: "Pokémon", "One Piece": "One Piece", Sports: "Sports", Watch: "Watches", Others: "Other" };
+  const cats = [...new Set(a.packs.map((p) => p.category || "Other"))];
+  if (!cats.includes(activeCat)) activeCat = cats.includes("Pokemon") ? "Pokemon" : cats[0];
+  $("catTabs").innerHTML = cats.map((c) => {
+    const list = a.packs.filter((p) => (p.category || "Other") === c);
+    const hot = list.some((p) => p.waiting);
+    return `<button type="button" role="tab" aria-selected="${c === activeCat}" data-cat="${c}">${CAT_LABEL[c] || c}<span class="n">${list.length}</span>${hot ? '<span class="hot" title="Someone is waiting"></span>' : ""}</button>`;
+  }).join("");
+  $("catTabs").querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => { activeCat = b.dataset.cat; renderArena(state.arena); }));
+  $("packGrid").innerHTML = a.packs.filter((p) => (p.category || "Other") === activeCat).map((p) => {
+    const odds = p.tiers ? Object.entries(p.tiers).map(([k, v]) => `${Math.round(v[2] * 100)}% ${k}`).join(" · ") : "";
+    const w = p.waiting ? `<span class="waiting">${p.waiting} waiting now</span>` : `<span class="waiting none">Nobody waiting</span>`;
+    return `<div class="pack-card">
+      <div class="pack pk-art${p.imageUrl || typeof artCache[p.code] === "string" ? " has-img" : ""}" style="--pk:${packColor(p.priceUsd)}"><div class="pack-foil"></div>${p.imageUrl || typeof artCache[p.code] === "string" ? `<img src="${p.imageUrl || artCache[p.code]}" alt="" onerror="this.parentElement.classList.remove('has-img'); this.remove()">` : ""}</div>
+      <div style="min-width:0">
+        <h4>${shortPackName(p)}</h4>
+        <div class="price">$${p.priceUsd}<small>USDC</small></div>
+        <div class="odds">${odds}</div>
+        <div class="row2">
+          <button class="btn rip-btn" type="button" data-join="${p.code}" ${active ? "disabled" : ""}>${p.waiting ? "Join duel" : "Deposit & wait"}</button>
+          ${w}
+        </div>
+      </div></div>`;
+  }).join("");
+  $("packGrid").querySelectorAll("[data-join]").forEach((b) => b.addEventListener("click", () => join(b.dataset.join)));
+}
+
+
+// Demo pulls that follow the chosen pack's real odds and value ranges.
+const DEMO_NAMES = {
+  Pokemon: ["Charizard ex", "Umbreon VMAX", "Mew ex Special Art", "Mewtwo GX", "Rayquaza Holo", "Gengar Full Art", "Lugia Holo 1st Ed", "Blastoise Holo", "Espeon VMAX", "Greninja ex"],
+  "One Piece": ["Monkey D. Luffy Alt Art", "Shanks Manga Rare", "Roronoa Zoro Leader", "Nami Parallel", "Trafalgar Law SEC"],
+  Sports: ["Rookie Patch Auto", "Prizm Silver Rookie", "Chrome Refractor Rookie", "Gold Vinyl 1/1", "Downtown Insert"],
+  Watch: ["Steel Chronograph", "Vintage Diver", "Automatic Dress Watch", "GMT Traveller"],
+  Others: ["Dragon Ball Super Rare", "Riftbound Champion Foil", "Anime Promo Foil", "Super Saiyan Gold Rare"],
+};
+function demoCard(pack) {
+  const tiers = Object.entries(pack?.tiers || { common: [30, 60, 1] });
+  let r = Math.random() * tiers.reduce((s, [, t]) => s + t[2], 0);
+  const [tier, [lo, hi]] = tiers.find(([, t]) => (r -= t[2]) < 0) || tiers[0];
+  const u = Math.random();
+  const value = Math.round(lo * Math.pow(hi / lo, u * u * u) * 100) / 100;
+  const names = DEMO_NAMES[pack?.category] || DEMO_NAMES.Pokemon;
+  const grade = ["PSA 10", "PSA 9", "BGS 9.5", "CGC 10"][Math.floor(Math.random() * 4)];
+  return { name: `${1999 + Math.floor(Math.random() * 27)} ${names[Math.floor(Math.random() * names.length)]} ${grade}`,
+    rarity: tier[0].toUpperCase() + tier.slice(1), grade, insuredValueUsd: value, image: null };
+}
+
+// Demo: walk through the whole flow with sample cards, no wallet or money.
+async function demoJoin(code) {
+  const pack = (state.arena?.packs || []).find((p) => p.code === code);
+  demoSeat = { id: "demo", pack: code, priceUsd: pack?.priceUsd, status: "signing" };
+  renderMySeat(demoSeat); renderArena(state.arena);
+  await sleep(1400);
+  demoSeat = { ...demoSeat, status: "paid", paidAt: new Date().toISOString() }; renderMySeat(demoSeat); renderArena(state.arena);
+  await sleep(4500);
+  if (!demoSeat || demoSeat.status !== "paid") return;
+  const opp = "Opp4nentWa11et5555555555555555555555555555555";
+  const ca = demoCard(pack), cb = demoCard(pack);
+  const winner = ca.insuredValueUsd === cb.insuredValueUsd ? null : (ca.insuredValueUsd > cb.insuredValueUsd ? me : opp);
+  const duel = { id: "demo-duel", pack: pack, a: { wallet: me, card: ca }, b: { wallet: opp, card: cb },
+    result: winner ? "win" : "tie", winner, potUsd: Math.round((ca.insuredValueUsd + cb.insuredValueUsd) * 100) / 100, payouts: [] };
+  demoSeat = { ...demoSeat, status: "matched" }; renderMySeat(demoSeat, duel);
+  document.querySelector(".stage").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  await sleep(500);
+  await reveal(duelToRound(duel, demoSeat));
+  demoSeat = { ...demoSeat, status: "done" }; renderMySeat(demoSeat, duel); renderArena(state.arena);
+}
+
+$("connectBtn").addEventListener("click", connect);
+
+
+// ---------- views: home and duel ----------
+let view = "home";
+function latestFor(v) {
+  const rs = state.rounds || [];
+  if (v === "duel" && state.demo && !rs.some((r) => r.kind === "deposit")) {
+    // Preview only: a sample open duel on the $50 pack.
+    const pk = (state.arena?.packs || []).find((x) => x.code === "pokemon_50");
+    if (pk) {
+      const ca = demoCard(pk), cb = demoCard(pk);
+      const wa = "Ax7pQ2mVnL4kRt9sYb3cHd6fJg8uWe5oZi1N", wb = "Bq3sK8wRtY2vLm6nPd9cXf4hJu7gEa5oTz1M";
+      rs.unshift({ key: "d-demo", kind: "deposit", round: 12, at: new Date(Date.now() - 4 * 60000).toISOString(),
+        pack: { code: pk.code, name: pk.name, priceUsd: pk.priceUsd, category: pk.category },
+        a: { wallet: wa, card: ca }, b: { wallet: wb, card: cb },
+        result: ca.insuredValueUsd === cb.insuredValueUsd ? "tie" : "win",
+        winner: ca.insuredValueUsd >= cb.insuredValueUsd ? wa : wb, potUsd: Math.round((ca.insuredValueUsd + cb.insuredValueUsd) * 100) / 100, payouts: [] });
+      render();
+    }
+  }
+  return rs.find((r) => r.kind === (v === "duel" ? "deposit" : "holder")) || rs[0];
+}
+function setView(v, { scroll = true } = {}) {
+  view = v;
+  const home = $("homeView"), duel = $("duelView");
+  home.hidden = v === "duel"; duel.hidden = v !== "duel";
+  const slot = $(v === "duel" ? "stageDuel" : "stageHome");
+  const stage = document.querySelector(".stage");
+  if (stage.parentElement !== slot) slot.appendChild(stage);
+  (v === "duel" ? duel : home).classList.remove("view-in");
+  void document.body.offsetWidth;
+  (v === "duel" ? duel : home).classList.add("view-in");
+  if (!revealing) { const r = latestFor(v); if (r) showRound(r, false); }
+  try { history.replaceState(null, "", v === "duel" ? "#duel" : location.pathname + location.search); } catch (e) {}
+  if (scroll) window.scrollTo({ top: 0, behavior: "auto" });
+}
+$("duelCta").addEventListener("click", () => setView("duel"));
+$("backHome").addEventListener("click", () => setView("home"));
+
+$("caChip").addEventListener("click", async () => {
+  const ca = $("caChip").dataset.ca; if (!ca) return;
+  try { await navigator.clipboard.writeText(ca); $("caText").textContent = "Copied"; }
+  catch (e) { $("caText").textContent = ca; }
+  setTimeout(() => { $("caText").textContent = short(ca); }, 1500);
+});
+function render() {
+  const s = state;
+  const hasCoin = !!s.mint;
+  const ticker = s.name && s.name !== "$YOURCOIN" ? s.name : "";
+  const buy = $("buyLink");
+  buy.href = hasCoin ? (s.buyUrl || `https://pump.fun/coin/${s.mint}`) : "#";
+  buy.classList.toggle("soon", !hasCoin && !s.demo);
+  buy.textContent = hasCoin || s.demo ? `Buy ${ticker || (s.demo ? "$COIN" : "now")}` : "Coin launching soon";
+  $("caChip").hidden = !hasCoin;
+  if (hasCoin) { $("caText").textContent = short(s.mint); $("caChip").dataset.ca = s.mint; }
+  $("minPct").textContent = `${s.minHoldingPct ?? 1}%`;
+  drawPacks(s.pack);
+  renderWallet(s.wallet);
+  renderArena(s.arena);
+  $("holderCol").hidden = s.holderEnabled === false;
+  $("packName").textContent = s.pack ? `${s.pack.name} · $${s.pack.priceUsd} a pack` : "";
+  $("mintLine").textContent = s.mint ? `Mint ${short(s.mint)}` : "";
+  const pill = $("statusPill");
+  pill.classList.toggle("demo", !!s.demo);
+  $("statusText").textContent = s.demo ? "Demo data" : (s.status?.startsWith("waiting") ? "Waiting for fees" : s.status === "dueling" ? "Dueling now" : "Live");
+
+  const f = s.fund ?? {};
+  if (f.balanceSol != null && f.needSol) {
+    const pct = Math.min(100, (f.balanceSol / f.needSol) * 100);
+    $("fundNum").innerHTML = `${f.balanceSol.toFixed(2)} <small>/ ${f.needSol.toFixed(2)} SOL</small>`;
+    $("fundPct").textContent = `${Math.round(pct)}%`;
+    $("meterFill").style.width = pct + "%";
+    $("meter").setAttribute("aria-valuenow", Math.round(pct));
+    $("fundNote").textContent = pct >= 100 ? "Fund is full. Next duel is starting." : `${(f.needSol - f.balanceSol).toFixed(2)} SOL of fees until the next duel.`;
+  } else {
+    $("fundNum").textContent = "–";
+    $("fundNote").textContent = "Fund balance appears once the engine is running.";
+  }
+
+  if (s.pack?.tiers) {
+    const t = s.pack.tiers;
+    $("packOdds").textContent = `${s.pack?.name ? s.pack.name + ". " : ""}Odds per pull: ${Object.entries(t).map(([k, v]) => `${k} ${Math.round(v[2] * 100)}%`).join(", ")}.`;
+  }
+  const elig = s.lastSnapshot?.eligible ?? [];
+  $("eligSub").textContent = `${elig.length} wallet${elig.length === 1 ? "" : "s"} can be drawn next round.`;
+  $("eligList").innerHTML = elig.map((h) => {
+    const rec = s.leaderboard?.[h.wallet];
+    return `<li><span class="w" title="${h.wallet}">${short(h.wallet)}</span><span class="pct">${h.pct}%</span><span class="rec">${rec ? `${rec.wins}–${rec.losses}` : "0–0"}</span></li>`;
+  }).join("") || `<li><span class="w" style="color:var(--muted)">No wallets at the bar yet.</span></li>`;
+  const ex = s.lastSnapshot?.excluded ?? [];
+  $("exSummary").textContent = `Not eligible (${ex.length})`;
+  $("exList").innerHTML = ex.map((h) => `<li class="ex"><span class="w">${short(h.wallet)}</span><span class="pct">${h.pct}%</span><span class="rec why">${h.reason}</span></li>`).join("");
+
+  $("rounds").innerHTML = (s.rounds ?? []).map((r) => {
+    const a = r.winner === r.a.wallet ? "wn" : "", b = r.winner === r.b.wallet ? "wn" : "";
+    return `<tr class="row" data-key="${r.key}" tabindex="0">
+      <td class="mono">${r.round}<br><span class="kind ${r.kind}">${r.kind === "holder" ? "Holders" : "Open"}</span></td>
+      <td class="vsline"><span class="${a}">${short(r.a.wallet)}</span> vs <span class="${b}">${short(r.b.wallet)}</span><br><span style="color:var(--muted);font-family:var(--body);font-size:12px">${ago(r.at)}</span></td>
+      <td class="num">${usd(r.a.card.insuredValueUsd)}<br>${usd(r.b.card.insuredValueUsd)}</td>
+      <td class="num">${r.result === "tie" ? "Tie" : usd(r.potUsd)}</td></tr>`;
+  }).join("");
+
+  if (s.rounds?.length) {
+    const keep = current && s.rounds.find((r) => r.key === current.key);
+    if (!revealing) showRound(keep || latestFor(view), false);
+  }
+}
+
+$("rounds").addEventListener("click", (e) => {
+  const tr = e.target.closest("tr.row"); if (!tr) return;
+  const r = state.rounds.find((x) => x.key === tr.dataset.key);
+  if (r) reveal(r);
+});
+$("rounds").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const tr = e.target.closest("tr.row"); if (!tr) return;
+  e.preventDefault(); tr.click();
+});
+$("replayBtn").addEventListener("click", () => current && reveal(current));
+
+async function load() {
+  try {
+    const res = await fetch(`${API_URL}/api/state`);
+    if (!res.ok) throw new Error(res.status);
+    const live = await res.json();
+    if (!live || (!live.holder && !live.arena)) throw new Error("not an engine");
+    const h = live.holder ?? {};
+    const tag = (rs, kind) => (rs ?? []).map((r) => ({ ...r, kind, key: `${kind[0]}${r.round}` }));
+    const rounds = [...tag(h.enabled === false ? [] : h.rounds, "holder"), ...tag(live.arena?.rounds, "deposit")]
+      .sort((x, y) => (y.at || "").localeCompare(x.at || ""));
+    const wasDemo = state.demo;
+    const newest = rounds[0]?.key;
+    const isNew = !wasDemo && newest && newest !== state.rounds?.[0]?.key;
+    state = { ...h, name: live.name, mint: live.mint, buyUrl: live.buyUrl, mode: live.mode, wallet: live.wallet, arena: live.arena, holderEnabled: h.enabled !== false, rounds, demo: false };
+    render();
+    if (wasDemo && me && me.startsWith("Demo")) { me = null; $("connectBtn").textContent = "Connect wallet"; }
+    if (isNew && !revealing) reveal(rounds[0]);
+    setTimeout(load, 8000);
+  } catch (err) {
+    if (!state.demo) $("statusText").textContent = "Engine offline";
+  }
+}
+
+render();
+if (location.hash === "#duel") setView("duel", { scroll: false });
+load();
+</script>
+
+</body>
+</html>
